@@ -17,5 +17,7 @@ class Locacao(Base):
     observacoes    = Column(String)
 
     # Relacionamentos
-    cliente = relationship("Cliente")
-    veiculo = relationship("Veiculo")
+    cliente           = relationship("Cliente")
+    veiculo           = relationship("Veiculo")
+    pagamentos        = relationship("Pagamento", back_populates="locacao")
+    cobranças_extras  = relationship("CobrancaExtra", back_populates="locacao")

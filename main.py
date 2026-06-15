@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from modelos.database import engine, Base
-from rotas import veiculos, clientes, locacoes, auth
+from rotas import veiculos, clientes, locacoes, auth, pagamentos
 
 # Importa todos os modelos para criar as tabelas
-from modelos import veiculo, cliente, locacao, usuario
+from modelos import veiculo, cliente, locacao, usuario, pagamento
 
 # Cria as tabelas no banco automaticamente
 Base.metadata.create_all(bind=engine)
