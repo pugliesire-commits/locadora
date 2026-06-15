@@ -360,7 +360,26 @@
           <option value="hatch">Hatch</option><option value="pickup">Pickup</option><option value="eletrico">Elétrico</option>
         </select>
       </div>
-      <div class="field"><label>Diária (R$)</label><input id="v-diaria" type="number" placeholder="150"/></div>
+      <div class="field"><label>Cor</label><input id="v-cor" placeholder="Ex: Prata"/></div>
+      <div class="field full">
+        <label>Tipo de Veículo</label>
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--light);font-size:14px">
+            <input type="radio" name="v-tipo" value="proprio" onchange="alternarTipoVeiculo(this.value)" checked
+              style="accent-color:var(--green);width:16px;height:16px"/>
+            🚗 Próprio
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--light);font-size:14px">
+            <input type="radio" name="v-tipo" value="investidor" onchange="alternarTipoVeiculo(this.value)"
+              style="accent-color:var(--green);width:16px;height:16px"/>
+            👥 De Investidor
+          </label>
+        </div>
+      </div>
+      <div class="field full" id="campo-investidor" style="display:none">
+        <label>Selecione o Investidor</label>
+        <select id="v-investidor" class="select-input"><option value="">Selecione...</option></select>
+      </div>
       <div class="field"><label>Cor</label><input id="v-cor" placeholder="Ex: Prata"/></div>
       <div class="field"><label>Investidor (opcional)</label><select id="v-investidor" class="select-input"><option value="">Nenhum</option></select></div>
     </div>
