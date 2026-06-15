@@ -4,16 +4,17 @@ from pydantic import BaseModel
 from typing import Optional
 from modelos.database import get_db
 from modelos.cliente import Cliente
+from modelos.locacao import Locacao
 
 router = APIRouter(prefix="/clientes", tags=["Clientes"])
 
 class ClienteSchema(BaseModel):
     nome: str
-    cpf: str
+    cpf: Optional[str] = None
     rg: Optional[str] = None
-    cnh: str
+    cnh: Optional[str] = None
     cnh_cat: Optional[str] = None
-    telefone: str
+    telefone: Optional[str] = None
     email: Optional[str] = None
     endereco: Optional[str] = None
 
@@ -52,6 +53,13 @@ def excluir_cliente(id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == id).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    # Verifica se tem locações vinculadas
+    locacoes = db.query(Locacao).filter(Locacao.cliente_id == id).count()
+    if locacoes > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cliente possui {locacoes} locação(ões) vinculada(s). Exclua as locações primeiro."
+        )
     db.delete(cliente)
     db.commit()
     return {"mensagem": "Cliente excluído com sucesso"}
