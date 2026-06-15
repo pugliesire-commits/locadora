@@ -7,227 +7,117 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
   :root {
-    --dark: #1b1b1b;
-    --darker: #111111;
-    --card: #222222;
-    --border: #2a2a2a;
-    --green: #9eff1f;
-    --white: #ffffff;
-    --gray: #888888;
-    --light: #cccccc;
-    --danger: #ff4444;
-    --warning: #ffcc00;
+    --dark: #1b1b1b; --darker: #111111; --card: #222222; --border: #2a2a2a;
+    --green: #9eff1f; --white: #ffffff; --gray: #888888; --light: #cccccc;
+    --danger: #ff4444; --warning: #ffcc00; --info: #378ADD;
   }
   body { background: var(--dark); color: var(--white); min-height: 100vh; }
 
-  /* LOGIN */
-  #login-screen {
-    min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; background: var(--darker);
-  }
-  .login-box {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 16px; padding: 40px; width: 360px;
-  }
-  .login-logo {
-    text-align: center; font-size: 28px; font-weight: 800;
-    letter-spacing: 2px; margin-bottom: 8px; color: var(--white);
-  }
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--darker); }
+  .login-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 360px; }
+  .login-logo { text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
   .login-logo span { color: var(--green); }
   .login-sub { text-align: center; color: var(--gray); font-size: 13px; margin-bottom: 32px; }
   .field { margin-bottom: 16px; }
   .field label { display: block; color: var(--gray); font-size: 12px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .field input {
-    width: 100%; background: var(--darker); border: 1px solid var(--border);
-    border-radius: 8px; padding: 11px 14px; color: var(--white);
-    font-size: 14px; outline: none; transition: border 0.2s;
-  }
+  .field input { width: 100%; background: var(--darker); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 14px; outline: none; transition: border 0.2s; }
   .field input:focus { border-color: var(--green); }
-  .btn-primary {
-    width: 100%; background: var(--green); color: var(--dark);
-    border: none; padding: 12px; border-radius: 8px;
-    font-size: 15px; font-weight: 800; cursor: pointer;
-    letter-spacing: 1px; margin-top: 8px; transition: opacity 0.2s;
-  }
+  .btn-primary { width: 100%; background: var(--green); color: var(--dark); border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; letter-spacing: 1px; margin-top: 8px; }
   .btn-primary:hover { opacity: 0.9; }
   .error-msg { background: #ff444422; color: #ff6666; border: 1px solid #ff444444; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
 
-  /* APP */
   #app-screen { display: none; min-height: 100vh; }
   .app-layout { display: flex; min-height: 100vh; }
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px; background: var(--darker); display: flex;
-    flex-direction: column; position: fixed; top: 0; left: 0;
-    height: 100vh; border-right: 1px solid var(--border); z-index: 100;
-  }
+  .sidebar { width: 220px; background: var(--darker); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; border-right: 1px solid var(--border); z-index: 100; }
   .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); }
-  .sidebar-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--white); }
+  .sidebar-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
   .sidebar-logo-text span { color: var(--green); }
   .sidebar-logo-sub { color: var(--gray); font-size: 11px; margin-top: 2px; }
   nav { flex: 1; padding: 16px 0; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 11px 20px; color: var(--gray); font-size: 14px;
-    cursor: pointer; border-left: 3px solid transparent;
-    transition: all 0.15s; text-decoration: none;
-  }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: var(--gray); font-size: 14px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
   .nav-item:hover { color: var(--white); background: #1b1b1b; }
   .nav-item.active { color: var(--green); border-left-color: var(--green); background: #1b1b1b; }
-  .nav-icon { font-size: 18px; width: 20px; text-align: center; }
-  .sidebar-user {
-    padding: 16px 20px; border-top: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .user-avatar {
-    width: 34px; height: 34px; border-radius: 50%; background: var(--green);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; color: var(--dark); flex-shrink: 0;
-  }
-  .user-info { min-width: 0; }
-  .user-name { color: var(--white); font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar-user { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--dark); flex-shrink: 0; }
+  .user-name { color: var(--white); font-size: 13px; font-weight: 500; }
   .user-role { color: var(--gray); font-size: 11px; }
-  .btn-logout {
-    background: none; border: none; color: var(--gray);
-    cursor: pointer; font-size: 18px; margin-left: auto; padding: 4px;
-  }
+  .btn-logout { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 18px; margin-left: auto; padding: 4px; }
   .btn-logout:hover { color: var(--danger); }
 
-  /* MAIN */
   .main { margin-left: 220px; flex: 1; min-height: 100vh; }
-  .topbar {
-    background: var(--darker); border-bottom: 1px solid var(--border);
-    padding: 16px 28px; display: flex; align-items: center;
-    justify-content: space-between; position: sticky; top: 0; z-index: 50;
-  }
-  .topbar-title { font-size: 16px; font-weight: 600; color: var(--white); }
-  .btn-new {
-    background: var(--green); color: var(--dark); border: none;
-    padding: 8px 16px; border-radius: 8px; font-size: 13px;
-    font-weight: 700; cursor: pointer; display: flex; align-items: center;
-    gap: 6px; transition: opacity 0.2s;
-  }
+  .topbar { background: var(--darker); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-size: 16px; font-weight: 600; }
+  .btn-new { background: var(--green); color: var(--dark); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .btn-new:hover { opacity: 0.9; }
   .content { padding: 28px; }
 
-  /* STATS */
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
   .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
   .stat-label { color: var(--gray); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .stat-value { font-size: 26px; font-weight: 700; color: var(--white); }
+  .stat-value { font-size: 26px; font-weight: 700; }
   .stat-value.accent { color: var(--green); }
-  .stat-change { font-size: 11px; color: var(--gray); margin-top: 4px; }
 
-  /* SECTION */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .section-title { font-size: 14px; font-weight: 600; color: var(--white); }
-
-  /* TABLE */
+  .section-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
   .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .table-search { padding: 14px 18px; border-bottom: 1px solid var(--border); }
-  .search-input {
-    background: var(--darker); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 12px; color: var(--white); font-size: 13px; width: 280px; outline: none;
-  }
+  .search-input { background: var(--darker); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--white); font-size: 13px; width: 280px; outline: none; }
   .search-input:focus { border-color: var(--green); }
   table { width: 100%; border-collapse: collapse; }
-  thead th {
-    background: #1a1a1a; color: var(--gray); font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    padding: 12px 18px; text-align: left; font-weight: 500;
-  }
+  thead th { background: #1a1a1a; color: var(--gray); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 18px; text-align: left; font-weight: 500; }
   tbody td { padding: 13px 18px; color: var(--light); font-size: 13px; border-top: 1px solid var(--border); }
   tbody tr:hover td { background: #252525; }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .badge-green { background: #9eff1f22; color: var(--green); }
   .badge-yellow { background: #ffcc0022; color: var(--warning); }
   .badge-red { background: #ff444422; color: #ff6666; }
   .badge-gray { background: #88888822; color: var(--gray); }
-  .action-btn {
-    background: none; border: 1px solid var(--border); color: var(--gray);
-    padding: 4px 10px; border-radius: 5px; font-size: 11px;
-    cursor: pointer; transition: all 0.15s; margin-right: 4px;
-  }
+  .badge-blue { background: #378ADD22; color: var(--info); }
+  .action-btn { background: none; border: 1px solid var(--border); color: var(--gray); padding: 4px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; transition: all 0.15s; margin-right: 4px; }
   .action-btn:hover { border-color: var(--green); color: var(--green); }
   .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
   .empty-state { padding: 48px; text-align: center; color: var(--gray); font-size: 14px; }
 
-  /* MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); z-index: 200;
-    align-items: center; justify-content: center;
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 14px; padding: 28px; width: 480px; max-height: 90vh;
-    overflow-y: auto;
-  }
-  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--white); }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
   .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .modal-grid .full { grid-column: 1 / -1; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-  .btn-cancel {
-    background: none; border: 1px solid var(--border); color: var(--gray);
-    padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer;
-  }
-  .btn-cancel:hover { border-color: var(--gray); color: var(--white); }
-  .btn-save {
-    background: var(--green); color: var(--dark); border: none;
-    padding: 9px 18px; border-radius: 8px; font-size: 13px;
-    font-weight: 700; cursor: pointer;
-  }
-  .toast {
-    position: fixed; bottom: 24px; right: 24px; background: #1a1a1a;
-    border: 1px solid var(--green); color: var(--green); padding: 12px 20px;
-    border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999;
-    display: none; animation: slideIn 0.3s ease;
-  }
-  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .loading { color: var(--gray); font-size: 13px; padding: 20px; text-align: center; }
+  .btn-cancel { background: none; border: 1px solid var(--border); color: var(--gray); padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .btn-save { background: var(--green); color: var(--dark); border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .select-input { width: 100%; background: var(--darker); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 14px; outline: none; }
+  .select-input:focus { border-color: var(--green); }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999; display: none; }
   .tabs-bar { display: flex; gap: 6px; margin-bottom: 16px; }
-  .tab-btn {
-    padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600;
-    cursor: pointer; background: none; border: 1px solid var(--border);
-    color: var(--gray); transition: all 0.15s;
-  }
+  .tab-btn { padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--gray); transition: all 0.15s; }
   .tab-btn.active { background: var(--green); color: var(--dark); border-color: var(--green); }
-  .tab-btn:hover:not(.active) { border-color: var(--gray); color: var(--white); }
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .main { margin-left: 0; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .modal { width: 95vw; }
-    .modal-grid { grid-template-columns: 1fr; }
-  }
+
+  .resumo-card { background: var(--darker); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .resumo-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .resumo-row:last-child { border-bottom: none; }
+  .resumo-label { color: var(--gray); font-size: 13px; }
+  .resumo-value { font-size: 13px; font-weight: 500; }
+  .resumo-value.green { color: var(--green); }
+  .resumo-value.red { color: var(--danger); }
+  .resumo-value.yellow { color: var(--warning); }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">LOCA<span>+</span>CAR</div>
     <div class="login-sub">Painel de Gestão Interno</div>
     <div class="error-msg" id="login-error">E-mail ou senha incorretos.</div>
-    <div class="field">
-      <label>E-mail</label>
-      <input type="email" id="login-email" placeholder="seu@email.com" value="admin@locadora.com"/>
-    </div>
-    <div class="field">
-      <label>Senha</label>
-      <input type="password" id="login-senha" placeholder="••••••" value="123456" onkeydown="if(event.key==='Enter')fazerLogin()"/>
-    </div>
+    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" value="admin@locadora.com"/></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••" value="123456" onkeydown="if(event.key==='Enter')fazerLogin()"/></div>
     <button class="btn-primary" onclick="fazerLogin()">ENTRAR</button>
   </div>
 </div>
 
-<!-- APP -->
 <div id="app-screen">
   <div class="app-layout">
     <aside class="sidebar">
@@ -236,22 +126,15 @@
         <div class="sidebar-logo-sub">Painel de Gestão</div>
       </div>
       <nav>
-        <a class="nav-item active" onclick="mostrarPagina('dashboard',this)">
-          <span class="nav-icon">&#9632;</span> Dashboard
-        </a>
-        <a class="nav-item" onclick="mostrarPagina('veiculos',this)">
-          <span class="nav-icon">&#9654;</span> Veículos
-        </a>
-        <a class="nav-item" onclick="mostrarPagina('clientes',this)">
-          <span class="nav-icon">&#9650;</span> Clientes
-        </a>
-        <a class="nav-item" onclick="mostrarPagina('locacoes',this)">
-          <span class="nav-icon">&#9679;</span> Locações
-        </a>
+        <div class="nav-item active" onclick="mostrarPagina('dashboard',this)">&#9632; Dashboard</div>
+        <div class="nav-item" onclick="mostrarPagina('veiculos',this)">&#9654; Veículos</div>
+        <div class="nav-item" onclick="mostrarPagina('clientes',this)">&#9650; Clientes</div>
+        <div class="nav-item" onclick="mostrarPagina('locacoes',this)">&#9679; Locações</div>
+        <div class="nav-item" onclick="mostrarPagina('pagamentos',this)">&#9632; Pagamentos</div>
       </nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">AD</div>
-        <div class="user-info">
+        <div>
           <div class="user-name" id="user-name">Admin</div>
           <div class="user-role">Administrador</div>
         </div>
@@ -262,42 +145,32 @@
     <main class="main">
       <div class="topbar">
         <span class="topbar-title" id="topbar-title">Dashboard</span>
-        <button class="btn-new" id="btn-novo" style="display:none" onclick="abrirModal()">
-          + Novo
-        </button>
+        <button class="btn-new" id="btn-novo" style="display:none" onclick="abrirModal()">+ Novo</button>
       </div>
       <div class="content">
 
-        <!-- DASHBOARD -->
         <div id="page-dashboard">
           <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Veículos cadastrados</div>
-              <div class="stat-value accent" id="stat-veiculos">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Veículos disponíveis</div>
-              <div class="stat-value accent" id="stat-disponiveis">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Clientes</div>
-              <div class="stat-value" id="stat-clientes">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Locações ativas</div>
-              <div class="stat-value accent" id="stat-locacoes">—</div>
-            </div>
+            <div class="stat-card"><div class="stat-label">Veículos</div><div class="stat-value accent" id="stat-veiculos">—</div></div>
+            <div class="stat-card"><div class="stat-label">Disponíveis</div><div class="stat-value accent" id="stat-disponiveis">—</div></div>
+            <div class="stat-card"><div class="stat-label">Clientes</div><div class="stat-value" id="stat-clientes">—</div></div>
+            <div class="stat-card"><div class="stat-label">Locações ativas</div><div class="stat-value accent" id="stat-locacoes">—</div></div>
           </div>
-          <div class="section-title" style="margin-bottom:14px">Locações recentes</div>
+          <div class="stats-grid" style="margin-top:-14px">
+            <div class="stat-card"><div class="stat-label">Receita total</div><div class="stat-value accent" id="stat-receita">—</div></div>
+            <div class="stat-card"><div class="stat-label">Pagamentos pendentes</div><div class="stat-value" style="color:var(--warning)" id="stat-pendentes">—</div></div>
+            <div class="stat-card"><div class="stat-label">Valor em aberto</div><div class="stat-value" style="color:var(--danger)" id="stat-aberto">—</div></div>
+            <div class="stat-card"><div class="stat-label">Cobranças extras</div><div class="stat-value" id="stat-extras">—</div></div>
+          </div>
+          <div class="section-title">Locações recentes</div>
           <div class="table-card">
             <table>
-              <thead><tr><th>Cliente</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Total</th><th>Status</th></tr></thead>
-              <tbody id="dash-locacoes"><tr><td colspan="6" class="loading">Carregando...</td></tr></tbody>
+              <thead><tr><th>Cliente</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Total</th><th>Pagamento</th></tr></thead>
+              <tbody id="dash-locacoes"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
             </table>
           </div>
         </div>
 
-        <!-- VEÍCULOS -->
         <div id="page-veiculos" style="display:none">
           <div class="tabs-bar">
             <button class="tab-btn active" onclick="filtrarVeiculos('todos',this)">Todos</button>
@@ -305,35 +178,44 @@
             <button class="tab-btn" onclick="filtrarVeiculos('Alugado',this)">Alugados</button>
           </div>
           <div class="table-card">
-            <div class="table-search">
-              <input class="search-input" placeholder="Buscar veículo..." oninput="buscarVeiculos(this.value)"/>
-            </div>
+            <div class="table-search"><input class="search-input" placeholder="Buscar veículo..." oninput="buscarVeiculos(this.value)"/></div>
             <table>
               <thead><tr><th>Marca / Modelo</th><th>Placa</th><th>Categoria</th><th>Ano</th><th>Diária</th><th>Status</th><th></th></tr></thead>
-              <tbody id="tabela-veiculos"><tr><td colspan="7" class="loading">Carregando...</td></tr></tbody>
+              <tbody id="tabela-veiculos"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
             </table>
           </div>
         </div>
 
-        <!-- CLIENTES -->
         <div id="page-clientes" style="display:none">
           <div class="table-card">
-            <div class="table-search">
-              <input class="search-input" placeholder="Buscar cliente..." oninput="buscarClientes(this.value)"/>
-            </div>
+            <div class="table-search"><input class="search-input" placeholder="Buscar cliente..." oninput="buscarClientes(this.value)"/></div>
             <table>
               <thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Telefone</th><th>CNH</th><th></th></tr></thead>
-              <tbody id="tabela-clientes"><tr><td colspan="6" class="loading">Carregando...</td></tr></tbody>
+              <tbody id="tabela-clientes"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
             </table>
           </div>
         </div>
 
-        <!-- LOCAÇÕES -->
         <div id="page-locacoes" style="display:none">
           <div class="table-card">
             <table>
-              <thead><tr><th>ID</th><th>Cliente</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Total</th><th>Status</th></tr></thead>
-              <tbody id="tabela-locacoes"><tr><td colspan="8" class="loading">Carregando...</td></tr></tbody>
+              <thead><tr><th>ID</th><th>Cliente</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Total</th><th>Status</th><th></th></tr></thead>
+              <tbody id="tabela-locacoes"><tr><td colspan="9" class="empty-state">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="page-pagamentos" style="display:none">
+          <div class="tabs-bar">
+            <button class="tab-btn active" onclick="filtrarPagamentos('todos',this)">Todos</button>
+            <button class="tab-btn" onclick="filtrarPagamentos('pendente',this)">Pendentes</button>
+            <button class="tab-btn" onclick="filtrarPagamentos('parcial',this)">Parciais</button>
+            <button class="tab-btn" onclick="filtrarPagamentos('pago',this)">Pagos</button>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Locação</th><th>Valor Total</th><th>Valor Pago</th><th>Pendente</th><th>Forma</th><th>Data</th><th>Status</th><th></th></tr></thead>
+              <tbody id="tabela-pagamentos"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -353,7 +235,7 @@
       <div class="field"><label>Placa</label><input id="v-placa" placeholder="ABC-1234"/></div>
       <div class="field"><label>Ano</label><input id="v-ano" type="number" placeholder="2023"/></div>
       <div class="field"><label>Categoria</label>
-        <select id="v-categoria" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none">
+        <select id="v-categoria" class="select-input">
           <option value="sedan">Sedan</option>
           <option value="suv">SUV</option>
           <option value="hatch">Hatch</option>
@@ -361,7 +243,7 @@
           <option value="eletrico">Elétrico</option>
         </select>
       </div>
-      <div class="field"><label>Valor da diária (R$)</label><input id="v-diaria" type="number" placeholder="150"/></div>
+      <div class="field"><label>Diária (R$)</label><input id="v-diaria" type="number" placeholder="150"/></div>
       <div class="field"><label>Cor</label><input id="v-cor" placeholder="Ex: Prata"/></div>
     </div>
     <div class="modal-actions">
@@ -395,18 +277,8 @@
   <div class="modal">
     <div class="modal-title">Nova Locação</div>
     <div class="modal-grid">
-      <div class="field full">
-        <label>Cliente</label>
-        <select id="l-cliente" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none">
-          <option value="">Selecione o cliente...</option>
-        </select>
-      </div>
-      <div class="field full">
-        <label>Veículo</label>
-        <select id="l-veiculo" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none">
-          <option value="">Selecione o veículo...</option>
-        </select>
-      </div>
+      <div class="field full"><label>Cliente</label><select id="l-cliente" class="select-input"><option value="">Selecione...</option></select></div>
+      <div class="field full"><label>Veículo</label><select id="l-veiculo" class="select-input"><option value="">Selecione...</option></select></div>
       <div class="field"><label>Data de início</label><input id="l-inicio" type="date"/></div>
       <div class="field"><label>Data de fim</label><input id="l-fim" type="date"/></div>
     </div>
@@ -417,7 +289,56 @@
   </div>
 </div>
 
-<!-- TOAST -->
+<!-- MODAL PAGAMENTO -->
+<div class="modal-overlay" id="modal-pagamento">
+  <div class="modal">
+    <div class="modal-title">Registrar Pagamento</div>
+    <div id="resumo-pagamento" class="resumo-card" style="display:none"></div>
+    <div class="modal-grid">
+      <div class="field"><label>Valor a pagar (R$)</label><input id="p-valor" type="number" placeholder="0.00" step="0.01"/></div>
+      <div class="field"><label>Forma de pagamento</label>
+        <select id="p-forma" class="select-input">
+          <option value="pix">Pix</option>
+          <option value="dinheiro">Dinheiro</option>
+          <option value="cartao_debito">Cartão de Débito</option>
+          <option value="cartao_credito">Cartão de Crédito</option>
+          <option value="transferencia">Transferência</option>
+        </select>
+      </div>
+      <div class="field full"><label>Observação</label><input id="p-obs" placeholder="Ex: Pagamento parcial"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-pagamento')">Cancelar</button>
+      <button class="btn-save" onclick="salvarPagamento()">Confirmar Pagamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COBRANÇA EXTRA -->
+<div class="modal-overlay" id="modal-extra">
+  <div class="modal">
+    <div class="modal-title">Adicionar Cobrança Extra</div>
+    <div class="modal-grid">
+      <div class="field"><label>Tipo</label>
+        <select id="e-tipo" class="select-input">
+          <option value="combustivel">Combustível</option>
+          <option value="lavagem">Lavagem</option>
+          <option value="dano">Dano no veículo</option>
+          <option value="km_excedente">Km excedente</option>
+          <option value="multa_atraso">Multa por atraso</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="field"><label>Valor (R$)</label><input id="e-valor" type="number" placeholder="0.00" step="0.01"/></div>
+      <div class="field full"><label>Descrição</label><input id="e-desc" placeholder="Descreva a cobrança..."/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-extra')">Cancelar</button>
+      <button class="btn-save" onclick="salvarExtra()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -426,7 +347,10 @@ let TOKEN = '';
 let paginaAtual = 'dashboard';
 let veiculosCache = [];
 let clientesCache = [];
+let pagamentosCache = [];
 let filtroVeiculo = 'todos';
+let filtroPagamento = 'todos';
+let locacaoSelecionada = null;
 
 async function fazerLogin() {
   const email = document.getElementById('login-email').value;
@@ -450,9 +374,7 @@ async function fazerLogin() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
     carregarDashboard();
-  } catch {
-    erro.style.display = 'block';
-  }
+  } catch { erro.style.display = 'block'; }
 }
 
 function fazerLogout() {
@@ -469,18 +391,21 @@ function mostrarPagina(nome, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   paginaAtual = nome;
-  const titulos = { dashboard: 'Dashboard', veiculos: 'Veículos', clientes: 'Clientes', locacoes: 'Locações' };
+  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos' };
   document.getElementById('topbar-title').textContent = titulos[nome];
   document.getElementById('btn-novo').style.display = nome === 'dashboard' ? 'none' : 'flex';
   if (nome === 'veiculos') carregarVeiculos();
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
+  else if (nome === 'pagamentos') carregarPagamentos();
   else carregarDashboard();
 }
 
-function showToast(msg) {
+function showToast(msg, cor) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.style.borderColor = cor || 'var(--green)';
+  t.style.color = cor || 'var(--green)';
   t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3000);
 }
@@ -488,41 +413,51 @@ function showToast(msg) {
 function abrirModal() {
   if (paginaAtual === 'veiculos') document.getElementById('modal-veiculo').classList.add('open');
   else if (paginaAtual === 'clientes') document.getElementById('modal-cliente').classList.add('open');
-  else if (paginaAtual === 'locacoes') {
-    carregarSelectsLocacao();
-    document.getElementById('modal-locacao').classList.add('open');
-  }
+  else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
+  else if (paginaAtual === 'pagamentos') showToast('Selecione uma locação para registrar pagamento.');
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
 async function carregarDashboard() {
   try {
-    const [rv, rc, rl] = await Promise.all([
+    const [rv, rc, rl, rp] = await Promise.all([
       fetch(API + '/veiculos/', auth()),
       fetch(API + '/clientes/', auth()),
-      fetch(API + '/locacoes/', auth())
+      fetch(API + '/locacoes/', auth()),
+      fetch(API + '/pagamentos/', auth())
     ]);
     const veiculos = await rv.json();
     const clientes = await rc.json();
     const locacoes = await rl.json();
+    const pagamentos = await rp.json();
+
     document.getElementById('stat-veiculos').textContent = veiculos.length;
     document.getElementById('stat-disponiveis').textContent = veiculos.filter(v => v.status === 'Disponível').length;
     document.getElementById('stat-clientes').textContent = clientes.length;
     document.getElementById('stat-locacoes').textContent = locacoes.filter(l => l.status === 'Ativa').length;
+
+    const receita = pagamentos.reduce((s, p) => s + (p.valor_pago || 0), 0);
+    const pendentes = pagamentos.filter(p => p.status !== 'pago').length;
+    const aberto = pagamentos.reduce((s, p) => s + (p.valor_pendente || 0), 0);
+    document.getElementById('stat-receita').textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('stat-pendentes').textContent = pendentes;
+    document.getElementById('stat-aberto').textContent = 'R$ ' + aberto.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('stat-extras').textContent = pagamentos.length;
+
     const tbody = document.getElementById('dash-locacoes');
     const recentes = locacoes.slice(-5).reverse();
-    if (!recentes.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma locação encontrada.</td></tr>'; return; }
+    if (!recentes.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma locação.</td></tr>'; return; }
+    const pMap = {};
+    pagamentos.forEach(p => pMap[p.locacao_id] = p);
     tbody.innerHTML = recentes.map(l => `
       <tr>
-        <td>${l.cliente_id}</td>
-        <td>${l.veiculo_id}</td>
-        <td>${formatData(l.data_inicio)}</td>
-        <td>${formatData(l.data_fim)}</td>
+        <td>${l.cliente_id}</td><td>${l.veiculo_id}</td>
+        <td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td>
         <td>R$ ${l.valor_total}</td>
-        <td>${badgeStatus(l.status)}</td>
+        <td>${pMap[l.id] ? badgePagamento(pMap[l.id].status) : '<span class="badge badge-gray">Sem pagamento</span>'}</td>
       </tr>`).join('');
-  } catch { }
+  } catch(e) { console.error(e); }
 }
 
 async function carregarVeiculos() {
@@ -530,26 +465,20 @@ async function carregarVeiculos() {
     const res = await fetch(API + '/veiculos/', auth());
     veiculosCache = await res.json();
     renderVeiculos(veiculosCache);
-  } catch { }
+  } catch {}
 }
 
 function renderVeiculos(lista) {
   const tbody = document.getElementById('tabela-veiculos');
-  const filtrado = filtroVeiculo === 'todos' ? lista : lista.filter(v => v.status === filtroVeiculo);
-  if (!filtrado.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum veículo encontrado.</td></tr>'; return; }
-  tbody.innerHTML = filtrado.map(v => `
-    <tr>
-      <td><strong>${v.marca}</strong> ${v.modelo}</td>
-      <td>${v.placa}</td>
-      <td>${v.categoria || '—'}</td>
-      <td>${v.ano || '—'}</td>
-      <td>R$ ${v.valor_diaria}</td>
-      <td>${badgeStatus(v.status)}</td>
-      <td>
-        <button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>
-        <button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>
-      </td>
-    </tr>`).join('');
+  const f = filtroVeiculo === 'todos' ? lista : lista.filter(v => v.status === filtroVeiculo);
+  if (!f.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum veículo.</td></tr>'; return; }
+  tbody.innerHTML = f.map(v => `<tr>
+    <td><strong>${v.marca}</strong> ${v.modelo}</td>
+    <td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td>
+    <td>R$ ${v.valor_diaria}</td><td>${badgeStatus(v.status)}</td>
+    <td><button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>
+    <button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button></td>
+  </tr>`).join('');
 }
 
 function filtrarVeiculos(f, el) {
@@ -560,9 +489,7 @@ function filtrarVeiculos(f, el) {
 }
 
 function buscarVeiculos(q) {
-  const filtrado = veiculosCache.filter(v =>
-    (v.marca + v.modelo + v.placa).toLowerCase().includes(q.toLowerCase()));
-  renderVeiculos(filtrado);
+  renderVeiculos(veiculosCache.filter(v => (v.marca+v.modelo+v.placa).toLowerCase().includes(q.toLowerCase())));
 }
 
 async function salvarVeiculo() {
@@ -570,9 +497,9 @@ async function salvarVeiculo() {
     marca: document.getElementById('v-marca').value,
     modelo: document.getElementById('v-modelo').value,
     placa: document.getElementById('v-placa').value,
-    ano: parseInt(document.getElementById('v-ano').value) || 2023,
+    ano: parseInt(document.getElementById('v-ano').value)||2023,
     categoria: document.getElementById('v-categoria').value,
-    valor_diaria: parseFloat(document.getElementById('v-diaria').value) || 0,
+    valor_diaria: parseFloat(document.getElementById('v-diaria').value)||0,
     cor: document.getElementById('v-cor').value,
     disponivel: true
   };
@@ -580,22 +507,22 @@ async function salvarVeiculo() {
     const res = await fetch(API + '/veiculos/', { method: 'POST', body: JSON.stringify(body), ...auth() });
     if (!res.ok) throw new Error();
     fecharModal('modal-veiculo');
-    showToast('✓ Veículo cadastrado com sucesso!');
+    showToast('✓ Veículo cadastrado!');
     carregarVeiculos();
-  } catch { showToast('Erro ao salvar veículo.'); }
+  } catch { showToast('Erro ao salvar.', 'var(--danger)'); }
 }
 
 function editarVeiculo(id) {
   const v = veiculosCache.find(x => x.id === id);
   if (!v) return;
   document.getElementById('modal-veiculo-title').textContent = 'Editar Veículo';
-  document.getElementById('v-marca').value = v.marca || '';
-  document.getElementById('v-modelo').value = v.modelo || '';
-  document.getElementById('v-placa').value = v.placa || '';
-  document.getElementById('v-ano').value = v.ano || '';
-  document.getElementById('v-categoria').value = v.categoria || 'sedan';
-  document.getElementById('v-diaria').value = v.valor_diaria || '';
-  document.getElementById('v-cor').value = v.cor || '';
+  document.getElementById('v-marca').value = v.marca||'';
+  document.getElementById('v-modelo').value = v.modelo||'';
+  document.getElementById('v-placa').value = v.placa||'';
+  document.getElementById('v-ano').value = v.ano||'';
+  document.getElementById('v-categoria').value = v.categoria||'sedan';
+  document.getElementById('v-diaria').value = v.valor_diaria||'';
+  document.getElementById('v-cor').value = v.cor||'';
   document.getElementById('modal-veiculo').classList.add('open');
 }
 
@@ -605,7 +532,7 @@ async function excluirVeiculo(id) {
     await fetch(API + '/veiculos/' + id, { method: 'DELETE', ...auth() });
     showToast('Veículo excluído.');
     carregarVeiculos();
-  } catch { showToast('Erro ao excluir.'); }
+  } catch { showToast('Erro ao excluir.', 'var(--danger)'); }
 }
 
 async function carregarClientes() {
@@ -613,27 +540,21 @@ async function carregarClientes() {
     const res = await fetch(API + '/clientes/', auth());
     clientesCache = await res.json();
     renderClientes(clientesCache);
-  } catch { }
+  } catch {}
 }
 
 function renderClientes(lista) {
   const tbody = document.getElementById('tabela-clientes');
-  if (!lista.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum cliente encontrado.</td></tr>'; return; }
-  tbody.innerHTML = lista.map(c => `
-    <tr>
-      <td><strong>${c.nome}</strong></td>
-      <td>${c.cpf}</td>
-      <td>${c.email || '—'}</td>
-      <td>${c.telefone || '—'}</td>
-      <td>${c.cnh}</td>
-      <td><button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button></td>
-    </tr>`).join('');
+  if (!lista.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum cliente.</td></tr>'; return; }
+  tbody.innerHTML = lista.map(c => `<tr>
+    <td><strong>${c.nome}</strong></td><td>${c.cpf}</td>
+    <td>${c.email||'—'}</td><td>${c.telefone||'—'}</td><td>${c.cnh}</td>
+    <td><button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button></td>
+  </tr>`).join('');
 }
 
 function buscarClientes(q) {
-  const filtrado = clientesCache.filter(c =>
-    (c.nome + c.cpf + (c.email||'')).toLowerCase().includes(q.toLowerCase()));
-  renderClientes(filtrado);
+  renderClientes(clientesCache.filter(c => (c.nome+c.cpf+(c.email||'')).toLowerCase().includes(q.toLowerCase())));
 }
 
 async function salvarCliente() {
@@ -649,9 +570,9 @@ async function salvarCliente() {
     const res = await fetch(API + '/clientes/', { method: 'POST', body: JSON.stringify(body), ...auth() });
     if (!res.ok) throw new Error();
     fecharModal('modal-cliente');
-    showToast('✓ Cliente cadastrado com sucesso!');
+    showToast('✓ Cliente cadastrado!');
     carregarClientes();
-  } catch { showToast('Erro ao salvar cliente.'); }
+  } catch { showToast('Erro ao salvar.', 'var(--danger)'); }
 }
 
 async function excluirCliente(id) {
@@ -660,43 +581,42 @@ async function excluirCliente(id) {
     await fetch(API + '/clientes/' + id, { method: 'DELETE', ...auth() });
     showToast('Cliente excluído.');
     carregarClientes();
-  } catch { showToast('Erro ao excluir.'); }
+  } catch { showToast('Erro ao excluir.', 'var(--danger)'); }
 }
 
 async function carregarLocacoes() {
   try {
-    const res = await fetch(API + '/locacoes/', auth());
-    const locacoes = await res.json();
+    const [rl, rp] = await Promise.all([
+      fetch(API + '/locacoes/', auth()),
+      fetch(API + '/pagamentos/', auth())
+    ]);
+    const locacoes = await rl.json();
+    const pagamentos = await rp.json();
+    const pMap = {};
+    pagamentos.forEach(p => pMap[p.locacao_id] = p);
     const tbody = document.getElementById('tabela-locacoes');
-    if (!locacoes.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhuma locação encontrada.</td></tr>'; return; }
-    tbody.innerHTML = locacoes.map(l => `
-      <tr>
-        <td>#${l.id}</td>
-        <td>${l.cliente_id}</td>
-        <td>${l.veiculo_id}</td>
-        <td>${formatData(l.data_inicio)}</td>
-        <td>${formatData(l.data_fim)}</td>
-        <td>${l.dias} dias</td>
-        <td>R$ ${l.valor_total}</td>
-        <td>${badgeStatus(l.status)}</td>
-      </tr>`).join('');
-  } catch { }
+    if (!locacoes.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhuma locação.</td></tr>'; return; }
+    tbody.innerHTML = locacoes.map(l => `<tr>
+      <td>#${l.id}</td><td>${l.cliente_id}</td><td>${l.veiculo_id}</td>
+      <td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td>
+      <td>${l.dias} dias</td><td>R$ ${l.valor_total}</td>
+      <td>${badgeStatus(l.status)}</td>
+      <td>
+        <button class="action-btn" onclick="abrirPagamento(${l.id}, ${l.valor_total})">Pagar</button>
+        <button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>
+      </td>
+    </tr>`).join('');
+  } catch {}
 }
 
 async function carregarSelectsLocacao() {
-  const [rv, rc] = await Promise.all([
-    fetch(API + '/veiculos/', auth()),
-    fetch(API + '/clientes/', auth())
-  ]);
+  const [rv, rc] = await Promise.all([fetch(API+'/veiculos/',auth()), fetch(API+'/clientes/',auth())]);
   const veiculos = await rv.json();
   const clientes = await rc.json();
-  const sv = document.getElementById('l-veiculo');
-  const sc = document.getElementById('l-cliente');
-  sv.innerHTML = '<option value="">Selecione o veículo...</option>' +
-    veiculos.filter(v => v.status === 'Disponível').map(v =>
-      `<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa} (R$ ${v.valor_diaria}/dia)</option>`).join('');
-  sc.innerHTML = '<option value="">Selecione o cliente...</option>' +
-    clientes.map(c => `<option value="${c.id}">${c.nome} — CNH: ${c.cnh}</option>`).join('');
+  document.getElementById('l-veiculo').innerHTML = '<option value="">Selecione...</option>' +
+    veiculos.filter(v=>v.status==='Disponível').map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');
+  document.getElementById('l-cliente').innerHTML = '<option value="">Selecione...</option>' +
+    clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
 }
 
 async function salvarLocacao() {
@@ -706,22 +626,126 @@ async function salvarLocacao() {
     data_inicio: document.getElementById('l-inicio').value,
     data_fim: document.getElementById('l-fim').value
   };
-  if (!body.cliente_id || !body.veiculo_id || !body.data_inicio || !body.data_fim) {
-    showToast('Preencha todos os campos.'); return;
-  }
+  if (!body.cliente_id||!body.veiculo_id||!body.data_inicio||!body.data_fim) { showToast('Preencha todos os campos.','var(--warning)'); return; }
   try {
-    const res = await fetch(API + '/locacoes/', { method: 'POST', body: JSON.stringify(body), ...auth() });
+    const res = await fetch(API+'/locacoes/', {method:'POST',body:JSON.stringify(body),...auth()});
     if (!res.ok) throw new Error();
     const data = await res.json();
     fecharModal('modal-locacao');
-    showToast(`✓ Locação criada! Total: R$ ${data.valor_total}`);
+    showToast('✓ Locação criada! Total: R$ '+data.valor_total);
     carregarLocacoes();
-  } catch { showToast('Erro ao criar locação.'); }
+  } catch { showToast('Erro ao criar locação.','var(--danger)'); }
+}
+
+async function carregarPagamentos() {
+  try {
+    const res = await fetch(API + '/pagamentos/', auth());
+    pagamentosCache = await res.json();
+    renderPagamentos(pagamentosCache);
+  } catch {}
+}
+
+function renderPagamentos(lista) {
+  const tbody = document.getElementById('tabela-pagamentos');
+  const f = filtroPagamento === 'todos' ? lista : lista.filter(p => p.status === filtroPagamento);
+  if (!f.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pagamento.</td></tr>'; return; }
+  tbody.innerHTML = f.map(p => `<tr>
+    <td>#${p.locacao_id}</td>
+    <td>R$ ${p.valor_total?.toFixed(2)}</td>
+    <td class="${p.valor_pago>0?'':''}">R$ ${(p.valor_pago||0).toFixed(2)}</td>
+    <td style="color:${p.valor_pendente>0?'var(--warning)':'var(--green)'}">R$ ${(p.valor_pendente||0).toFixed(2)}</td>
+    <td>${formatForma(p.forma_pagamento)}</td>
+    <td>${formatData(p.data_pagamento)}</td>
+    <td>${badgePagamento(p.status)}</td>
+    <td><button class="action-btn" onclick="abrirPagamento(${p.locacao_id}, ${p.valor_pendente})">+ Pagar</button>
+    <button class="action-btn" onclick="abrirExtra(${p.locacao_id})">+ Extra</button></td>
+  </tr>`).join('');
+}
+
+function filtrarPagamentos(f, el) {
+  filtroPagamento = f;
+  document.querySelectorAll('#page-pagamentos .tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderPagamentos(pagamentosCache);
+}
+
+async function abrirPagamento(locacaoId, valorPendente) {
+  locacaoSelecionada = locacaoId;
+  try {
+    const res = await fetch(API + '/pagamentos/resumo/' + locacaoId, auth());
+    if (res.ok) {
+      const r = await res.json();
+      const div = document.getElementById('resumo-pagamento');
+      div.style.display = 'block';
+      div.innerHTML = `
+        <div class="resumo-row"><span class="resumo-label">Valor base</span><span class="resumo-value">R$ ${r.valor_base?.toFixed(2)}</span></div>
+        <div class="resumo-row"><span class="resumo-label">Cobranças extras</span><span class="resumo-value">R$ ${r.total_extras?.toFixed(2)}</span></div>
+        <div class="resumo-row"><span class="resumo-label">Total</span><span class="resumo-value">R$ ${r.valor_total?.toFixed(2)}</span></div>
+        <div class="resumo-row"><span class="resumo-label">Já pago</span><span class="resumo-value green">R$ ${r.valor_pago?.toFixed(2)}</span></div>
+        <div class="resumo-row"><span class="resumo-label">Pendente</span><span class="resumo-value ${r.valor_pendente>0?'red':'green'}">R$ ${r.valor_pendente?.toFixed(2)}</span></div>
+      `;
+      document.getElementById('p-valor').value = r.valor_pendente > 0 ? r.valor_pendente.toFixed(2) : '';
+    }
+  } catch {
+    document.getElementById('resumo-pagamento').style.display = 'none';
+    document.getElementById('p-valor').value = valorPendente || '';
+  }
+  document.getElementById('modal-pagamento').classList.add('open');
+}
+
+async function salvarPagamento() {
+  const body = {
+    locacao_id: locacaoSelecionada,
+    valor_pago: parseFloat(document.getElementById('p-valor').value)||0,
+    forma_pagamento: document.getElementById('p-forma').value,
+    observacao: document.getElementById('p-obs').value
+  };
+  try {
+    const res = await fetch(API+'/pagamentos/', {method:'POST',body:JSON.stringify(body),...auth()});
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    fecharModal('modal-pagamento');
+    showToast('✓ Pagamento registrado! Status: '+data.status);
+    carregarPagamentos();
+    carregarDashboard();
+  } catch { showToast('Erro ao registrar.','var(--danger)'); }
+}
+
+function abrirExtra(locacaoId) {
+  locacaoSelecionada = locacaoId;
+  document.getElementById('modal-extra').classList.add('open');
+}
+
+async function salvarExtra() {
+  const body = {
+    locacao_id: locacaoSelecionada,
+    tipo: document.getElementById('e-tipo').value,
+    descricao: document.getElementById('e-desc').value,
+    valor: parseFloat(document.getElementById('e-valor').value)||0
+  };
+  try {
+    const res = await fetch(API+'/pagamentos/extras', {method:'POST',body:JSON.stringify(body),...auth()});
+    if (!res.ok) throw new Error();
+    fecharModal('modal-extra');
+    showToast('✓ Cobrança extra adicionada!');
+    carregarLocacoes();
+  } catch { showToast('Erro ao adicionar.','var(--danger)'); }
 }
 
 function badgeStatus(s) {
-  const map = { 'Disponível': 'green', 'Ativa': 'green', 'Alugado': 'yellow', 'Pendente': 'yellow', 'Encerrada': 'gray', 'Atrasada': 'red' };
-  return `<span class="badge badge-${map[s]||'gray'}">${s}</span>`;
+  const m = {'Disponível':'green','Ativa':'green','Alugado':'yellow','Pendente':'yellow','Encerrada':'gray','Paga':'blue'};
+  return `<span class="badge badge-${m[s]||'gray'}">${s}</span>`;
+}
+
+function badgePagamento(s) {
+  const m = {pago:'green',parcial:'yellow',pendente:'red'};
+  const l = {pago:'Pago',parcial:'Parcial',pendente:'Pendente'};
+  return `<span class="badge badge-${m[s]||'gray'}">${l[s]||s}</span>`;
+}
+
+function formatForma(f) {
+  const m = {pix:'Pix',dinheiro:'Dinheiro',cartao_debito:'Débito',cartao_credito:'Crédito',transferencia:'Transferência'};
+  return m[f]||f||'—';
 }
 
 function formatData(d) {
