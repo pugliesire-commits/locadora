@@ -135,6 +135,7 @@
         <div class="nav-item" onclick="mostrarPagina('pagamentos',this)">&#9632; Pagamentos</div>
         <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
         <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
+        <div class="nav-item" onclick="mostrarPagina('indicadores',this)">&#9670; Indicadores</div>
         <div class="nav-section nav-admin" style="display:none">ADMINISTRAÇÃO</div>
         <div class="nav-item nav-admin" style="display:none" onclick="mostrarPagina('usuarios',this)">&#9632; Usuários</div>
       </nav>
@@ -291,6 +292,35 @@
                 <tbody id="tabela-despesas-veiculo"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div id="page-indicadores" style="display:none">
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value accent" id="ind-receita">—</div></div>
+            <div class="stat-card"><div class="stat-label">Despesas Total</div><div class="stat-value" style="color:var(--danger)" id="ind-despesas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Parcelas Total</div><div class="stat-value" style="color:var(--warning)" id="ind-parcelas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Lucro Líquido</div><div class="stat-value" id="ind-lucro">—</div></div>
+          </div>
+          <div class="stats-grid" style="margin-top:-14px">
+            <div class="stat-card"><div class="stat-label">Margem de Lucro</div><div class="stat-value accent" id="ind-margem">—</div></div>
+            <div class="stat-card"><div class="stat-label">Entradas do Mês</div><div class="stat-value accent" id="ind-entradas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Saídas do Mês</div><div class="stat-value" style="color:var(--danger)" id="ind-saidas">—</div></div>
+            <div class="stat-card"><div class="stat-label">Saldo do Mês</div><div class="stat-value" id="ind-saldo">—</div></div>
+          </div>
+          <div class="section-title">📅 Evolução Mensal — <span id="ind-ano"></span></div>
+          <div class="table-card" style="margin-bottom:20px">
+            <table>
+              <thead><tr><th>Mês</th><th>Receita</th><th>Despesas</th><th>Lucro</th></tr></thead>
+              <tbody id="tabela-evolucao"><tr><td colspan="4" class="empty-state">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="section-title">🚗 ROI por Veículo</div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Placa</th><th>Modelo</th><th>Receita</th><th>Despesas</th><th>Parcelas</th><th>Lucro</th><th>ROI</th><th>Situação</th></tr></thead>
+              <tbody id="tabela-roi"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+            </table>
           </div>
         </div>
 
@@ -568,17 +598,18 @@ function mostrarPagina(nome, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   paginaAtual = nome;
-  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais', usuarios:'Gestão de Usuários' };
+  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais', indicadores:'Indicadores Financeiros', usuarios:'Gestão de Usuários' };
   document.getElementById('topbar-title').textContent = titulos[nome];
-  const mostrarBotao = nome !== 'dashboard' && nome !== 'usuarios';
-  document.getElementById('btn-novo').style.display = mostrarBotao ? 'flex' : 'none';
-  if (nome === 'usuarios') { document.getElementById('btn-novo').style.display = 'flex'; }
+  const semBotao = ['dashboard', 'indicadores', 'usuarios'];
+  document.getElementById('btn-novo').style.display = semBotao.includes(nome) ? 'none' : 'flex';
+  if (nome === 'usuarios') document.getElementById('btn-novo').style.display = 'flex';
   if (nome === 'veiculos') carregarVeiculos();
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'pagamentos') carregarPagamentos();
   else if (nome === 'financiamentos') carregarFinanciamentos();
   else if (nome === 'despesas') carregarDespesas();
+  else if (nome === 'indicadores') carregarIndicadores();
   else if (nome === 'usuarios') carregarUsuarios();
   else carregarDashboard();
 }
@@ -1171,6 +1202,58 @@ async function excluirDespesa(id) {
     carregarDespesas();
     carregarDashboard();
   } catch { showToast('Erro ao excluir.','var(--danger)'); }
+}
+
+async function carregarIndicadores() {
+  try {
+    const [rr, rf] = await Promise.all([
+      fetch(API + '/indicadores/resumo', auth()),
+      fetch(API + '/indicadores/fluxo-caixa', auth())
+    ]);
+    const resumo = await rr.json();
+    const fluxo = await rf.json();
+    document.getElementById('ind-receita').textContent = 'R$ ' + resumo.receita_total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('ind-despesas').textContent = 'R$ ' + resumo.despesas_total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('ind-parcelas').textContent = 'R$ ' + resumo.parcelas_total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    const lucro = resumo.lucro_liquido;
+    document.getElementById('ind-lucro').textContent = 'R$ ' + lucro.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('ind-lucro').style.color = lucro >= 0 ? 'var(--green)' : 'var(--danger)';
+    document.getElementById('ind-margem').textContent = resumo.margem_lucro + '%';
+    document.getElementById('ind-margem').style.color = resumo.margem_lucro >= 0 ? 'var(--green)' : 'var(--danger)';
+    document.getElementById('ind-entradas').textContent = 'R$ ' + fluxo.entradas.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('ind-saidas').textContent = 'R$ ' + fluxo.saidas.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    const saldo = fluxo.saldo;
+    document.getElementById('ind-saldo').textContent = 'R$ ' + saldo.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    document.getElementById('ind-saldo').style.color = saldo >= 0 ? 'var(--green)' : 'var(--danger)';
+  } catch(e) { console.error(e); }
+  try {
+    const re = await fetch(API + '/indicadores/evolucao-mensal', auth());
+    const evolucao = await re.json();
+    document.getElementById('ind-ano').textContent = new Date().getFullYear();
+    const tbody = document.getElementById('tabela-evolucao');
+    tbody.innerHTML = evolucao.map(m => `<tr>
+      <td><strong>${m.mes}</strong></td>
+      <td style="color:var(--green)">R$ ${m.receita.toFixed(2)}</td>
+      <td style="color:var(--danger)">R$ ${m.despesas.toFixed(2)}</td>
+      <td style="color:${m.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${m.lucro.toFixed(2)}</strong></td>
+    </tr>`).join('');
+  } catch(e) { console.error(e); }
+  try {
+    const rv = await fetch(API + '/indicadores/roi-por-veiculo', auth());
+    const roi = await rv.json();
+    const tbody = document.getElementById('tabela-roi');
+    if (!roi.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum dado.</td></tr>'; return; }
+    tbody.innerHTML = roi.map(r => `<tr>
+      <td><strong>${r.placa}</strong></td>
+      <td>${r.marca} ${r.modelo}</td>
+      <td style="color:var(--green)">R$ ${r.receita.toFixed(2)}</td>
+      <td style="color:var(--danger)">R$ ${r.despesas.toFixed(2)}</td>
+      <td style="color:var(--warning)">R$ ${r.parcelas.toFixed(2)}</td>
+      <td style="color:${r.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${r.lucro.toFixed(2)}</strong></td>
+      <td style="color:${r.roi>=0?'var(--green)':'var(--danger)'};font-weight:700">${r.roi}%</td>
+      <td>${r.situacao}</td>
+    </tr>`).join('');
+  } catch(e) { console.error(e); }
 }
 
 async function carregarUsuarios() {
