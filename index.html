@@ -925,11 +925,13 @@ function verRecebimentos(locacaoId){
 /* ===== RECEBIMENTOS ===== */
 async function carregarTabsRecebimentos(){
   try{
-    const res=await fetch(API+'/locacoes/',auth());
-    locacoesCache=await res.json();
+    const[rl,rc]=await Promise.all([fetch(API+'/locacoes/',auth()),fetch(API+'/clientes/',auth())]);
+    locacoesCache=await rl.json();
+    clientesCache=await rc.json();
+    const cliMap={};clientesCache.forEach(c=>cliMap[c.id]=c.nome);
     const tabs=document.getElementById('tabs-locacoes-receb');
     if(!locacoesCache.length){tabs.innerHTML='<span style="color:var(--gray);font-size:13px">Nenhuma locação ativa.</span>';return;}
-    tabs.innerHTML='<span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione:</span>'+locacoesCache.map(l=>`<button class="tab-btn" data-id="${l.id}" onclick="verParcelasLocacao(${l.id},this)">Locação #${l.id} — Cliente ${l.cliente_id}</button>`).join('');
+    tabs.innerHTML='<span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione:</span>'+locacoesCache.map(l=>`<button class="tab-btn" data-id="${l.id}" onclick="verParcelasLocacao(${l.id},this)">Locação #${l.id} — ${cliMap[l.cliente_id]||'Cliente '+l.cliente_id}</button>`).join('');
     document.getElementById('area-recebimentos').innerHTML='<div class="empty-state">Selecione uma locação acima.</div>';
   }catch{}
 }
