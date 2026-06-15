@@ -12,7 +12,6 @@
     --danger: #ff4444; --warning: #ffcc00; --info: #378ADD;
   }
   body { background: var(--dark); color: var(--white); min-height: 100vh; }
-
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--darker); }
   .login-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 360px; }
   .login-logo { text-align: center; font-size: 28px; font-weight: 800; letter-spacing: 2px; margin-bottom: 8px; }
@@ -25,10 +24,8 @@
   .btn-primary { width: 100%; background: var(--green); color: var(--dark); border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; letter-spacing: 1px; margin-top: 8px; }
   .btn-primary:hover { opacity: 0.9; }
   .error-msg { background: #ff444422; color: #ff6666; border: 1px solid #ff444444; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
-
   #app-screen { display: none; min-height: 100vh; }
   .app-layout { display: flex; min-height: 100vh; }
-
   .sidebar { width: 220px; background: var(--darker); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; border-right: 1px solid var(--border); z-index: 100; }
   .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); }
   .sidebar-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
@@ -44,20 +41,17 @@
   .user-role { color: var(--gray); font-size: 11px; }
   .btn-logout { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 18px; margin-left: auto; padding: 4px; }
   .btn-logout:hover { color: var(--danger); }
-
   .main { margin-left: 220px; flex: 1; min-height: 100vh; }
   .topbar { background: var(--darker); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
   .topbar-title { font-size: 16px; font-weight: 600; }
   .btn-new { background: var(--green); color: var(--dark); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .btn-new:hover { opacity: 0.9; }
   .content { padding: 28px; }
-
   .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
   .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
   .stat-label { color: var(--gray); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
   .stat-value { font-size: 26px; font-weight: 700; }
   .stat-value.accent { color: var(--green); }
-
   .section-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
   .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .table-search { padding: 14px 18px; border-bottom: 1px solid var(--border); }
@@ -77,7 +71,6 @@
   .action-btn:hover { border-color: var(--green); color: var(--green); }
   .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
   .empty-state { padding: 48px; text-align: center; color: var(--gray); font-size: 14px; }
-
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; width: 480px; max-height: 90vh; overflow-y: auto; }
@@ -89,12 +82,10 @@
   .btn-save { background: var(--green); color: var(--dark); border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
   .select-input { width: 100%; background: var(--darker); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 14px; outline: none; }
   .select-input:focus { border-color: var(--green); }
-
   .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999; display: none; }
   .tabs-bar { display: flex; gap: 6px; margin-bottom: 16px; }
   .tab-btn { padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--gray); transition: all 0.15s; }
   .tab-btn.active { background: var(--green); color: var(--dark); border-color: var(--green); }
-
   .resumo-card { background: var(--darker); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
   .resumo-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
   .resumo-row:last-child { border-bottom: none; }
@@ -103,6 +94,9 @@
   .resumo-value.green { color: var(--green); }
   .resumo-value.red { color: var(--danger); }
   .resumo-value.yellow { color: var(--warning); }
+  .alert-card { background: #ffcc0011; border: 1px solid #ffcc0033; border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .alert-card .alert-info { font-size: 13px; color: var(--light); }
+  .alert-card .alert-dias { font-size: 12px; color: var(--warning); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -112,8 +106,8 @@
     <div class="login-logo">LOCA<span>+</span>CAR</div>
     <div class="login-sub">Painel de Gestão Interno</div>
     <div class="error-msg" id="login-error">E-mail ou senha incorretos.</div>
-    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" value="admin@locadora.com"/></div>
-    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••" value="123456" onkeydown="if(event.key==='Enter')fazerLogin()"/></div>
+    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"/></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••" onkeydown="if(event.key==='Enter')fazerLogin()"/></div>
     <button class="btn-primary" onclick="fazerLogin()">ENTRAR</button>
   </div>
 </div>
@@ -131,6 +125,7 @@
         <div class="nav-item" onclick="mostrarPagina('clientes',this)">&#9650; Clientes</div>
         <div class="nav-item" onclick="mostrarPagina('locacoes',this)">&#9679; Locações</div>
         <div class="nav-item" onclick="mostrarPagina('pagamentos',this)">&#9632; Pagamentos</div>
+        <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
       </nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">AD</div>
@@ -160,7 +155,13 @@
             <div class="stat-card"><div class="stat-label">Receita total</div><div class="stat-value accent" id="stat-receita">—</div></div>
             <div class="stat-card"><div class="stat-label">Pagamentos pendentes</div><div class="stat-value" style="color:var(--warning)" id="stat-pendentes">—</div></div>
             <div class="stat-card"><div class="stat-label">Valor em aberto</div><div class="stat-value" style="color:var(--danger)" id="stat-aberto">—</div></div>
+            <div class="stat-card"><div class="stat-label">Parcelas do mês</div><div class="stat-value" style="color:var(--info)" id="stat-parcelas-mes">—</div></div>
+          </div>
+          <div class="stats-grid" style="margin-top:-14px">
+            <div class="stat-card"><div class="stat-label">Financiamentos ativos</div><div class="stat-value" style="color:var(--warning)" id="stat-fin-ativos">—</div></div>
+            <div class="stat-card"><div class="stat-label">Veículos quitados</div><div class="stat-value accent" id="stat-fin-quitados">—</div></div>
             <div class="stat-card"><div class="stat-label">Cobranças extras</div><div class="stat-value" id="stat-extras">—</div></div>
+            <div class="stat-card"><div class="stat-label">Total financiamentos</div><div class="stat-value" id="stat-fin-total">—</div></div>
           </div>
           <div class="section-title">Locações recentes</div>
           <div class="table-card">
@@ -220,11 +221,39 @@
           </div>
         </div>
 
+        <div id="page-financiamentos" style="display:none">
+          <div class="tabs-bar">
+            <button class="tab-btn active" onclick="filtrarFinanciamentos('todos',this)">Todos</button>
+            <button class="tab-btn" onclick="filtrarFinanciamentos('ativos',this)">Ativos</button>
+            <button class="tab-btn" onclick="filtrarFinanciamentos('quitados',this)">Quitados</button>
+            <button class="tab-btn" onclick="mostrarAlertas()">⚠️ Alertas</button>
+            <button class="tab-btn" onclick="mostrarRelatorio()">📊 Relatório</button>
+          </div>
+          <div id="area-financiamentos">
+            <div class="table-card">
+              <table>
+                <thead><tr><th>Placa</th><th>Modelo</th><th>Banco</th><th>Parcela</th><th>Pagas</th><th>Restantes</th><th>Total Devido</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tabela-financiamentos"><tr><td colspan="9" class="empty-state">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="area-alertas" style="display:none">
+            <div id="lista-alertas"></div>
+          </div>
+          <div id="area-relatorio" style="display:none">
+            <div class="table-card">
+              <table>
+                <thead><tr><th>Placa</th><th>Modelo</th><th>Banco</th><th>Total Pago Parcelas</th><th>Receita Gerada</th><th>Saldo</th><th>Situação</th></tr></thead>
+                <tbody id="tabela-relatorio"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
 </div>
-
 <!-- MODAL VEÍCULO -->
 <div class="modal-overlay" id="modal-veiculo">
   <div class="modal">
@@ -339,6 +368,27 @@
   </div>
 </div>
 
+<!-- MODAL FINANCIAMENTO -->
+<div class="modal-overlay" id="modal-financiamento">
+  <div class="modal">
+    <div class="modal-title">Novo Financiamento</div>
+    <div class="modal-grid">
+      <div class="field full"><label>Veículo</label><select id="f-veiculo" class="select-input"><option value="">Selecione...</option></select></div>
+      <div class="field full"><label>Banco / Financeira</label><input id="f-banco" placeholder="Ex: Banco do Brasil"/></div>
+      <div class="field"><label>Valor Financiado (R$)</label><input id="f-valor" type="number" placeholder="50000"/></div>
+      <div class="field"><label>Entrada (R$)</label><input id="f-entrada" type="number" placeholder="10000"/></div>
+      <div class="field"><label>Parcela Mensal (R$)</label><input id="f-parcela" type="number" placeholder="1200"/></div>
+      <div class="field"><label>Total de Parcelas</label><input id="f-total" type="number" placeholder="48"/></div>
+      <div class="field"><label>Parcelas já pagas</label><input id="f-pagas" type="number" placeholder="0" value="0"/></div>
+      <div class="field"><label>Data de Início</label><input id="f-inicio" type="date"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-financiamento')">Cancelar</button>
+      <button class="btn-save" onclick="salvarFinanciamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -348,8 +398,10 @@ let paginaAtual = 'dashboard';
 let veiculosCache = [];
 let clientesCache = [];
 let pagamentosCache = [];
+let financiamentosCache = [];
 let filtroVeiculo = 'todos';
 let filtroPagamento = 'todos';
+let filtroFinanciamento = 'todos';
 let locacaoSelecionada = null;
 
 async function fazerLogin() {
@@ -391,13 +443,14 @@ function mostrarPagina(nome, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   paginaAtual = nome;
-  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos' };
+  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos' };
   document.getElementById('topbar-title').textContent = titulos[nome];
   document.getElementById('btn-novo').style.display = nome === 'dashboard' ? 'none' : 'flex';
   if (nome === 'veiculos') carregarVeiculos();
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'pagamentos') carregarPagamentos();
+  else if (nome === 'financiamentos') carregarFinanciamentos();
   else carregarDashboard();
 }
 
@@ -415,22 +468,25 @@ function abrirModal() {
   else if (paginaAtual === 'clientes') document.getElementById('modal-cliente').classList.add('open');
   else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
   else if (paginaAtual === 'pagamentos') showToast('Selecione uma locação para registrar pagamento.');
+  else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
 async function carregarDashboard() {
   try {
-    const [rv, rc, rl, rp] = await Promise.all([
+    const [rv, rc, rl, rp, rf] = await Promise.all([
       fetch(API + '/veiculos/', auth()),
       fetch(API + '/clientes/', auth()),
       fetch(API + '/locacoes/', auth()),
-      fetch(API + '/pagamentos/', auth())
+      fetch(API + '/pagamentos/', auth()),
+      fetch(API + '/financiamentos/dashboard', auth())
     ]);
     const veiculos = await rv.json();
     const clientes = await rc.json();
     const locacoes = await rl.json();
     const pagamentos = await rp.json();
+    const finDash = rf.ok ? await rf.json() : {};
 
     document.getElementById('stat-veiculos').textContent = veiculos.length;
     document.getElementById('stat-disponiveis').textContent = veiculos.filter(v => v.status === 'Disponível').length;
@@ -444,6 +500,11 @@ async function carregarDashboard() {
     document.getElementById('stat-pendentes').textContent = pendentes;
     document.getElementById('stat-aberto').textContent = 'R$ ' + aberto.toLocaleString('pt-BR', {minimumFractionDigits:2});
     document.getElementById('stat-extras').textContent = pagamentos.length;
+
+    document.getElementById('stat-parcelas-mes').textContent = finDash.total_parcelas_mes ? 'R$ ' + finDash.total_parcelas_mes.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
+    document.getElementById('stat-fin-ativos').textContent = finDash.financiamentos_ativos ?? '0';
+    document.getElementById('stat-fin-quitados').textContent = finDash.financiamentos_quitados ?? '0';
+    document.getElementById('stat-fin-total').textContent = finDash.total_financiamentos ?? '0';
 
     const tbody = document.getElementById('dash-locacoes');
     const recentes = locacoes.slice(-5).reverse();
@@ -483,7 +544,7 @@ function renderVeiculos(lista) {
 
 function filtrarVeiculos(f, el) {
   filtroVeiculo = f;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#page-veiculos .tab-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderVeiculos(veiculosCache);
 }
@@ -652,7 +713,7 @@ function renderPagamentos(lista) {
   tbody.innerHTML = f.map(p => `<tr>
     <td>#${p.locacao_id}</td>
     <td>R$ ${p.valor_total?.toFixed(2)}</td>
-    <td class="${p.valor_pago>0?'':''}">R$ ${(p.valor_pago||0).toFixed(2)}</td>
+    <td>R$ ${(p.valor_pago||0).toFixed(2)}</td>
     <td style="color:${p.valor_pendente>0?'var(--warning)':'var(--green)'}">R$ ${(p.valor_pendente||0).toFixed(2)}</td>
     <td>${formatForma(p.forma_pagamento)}</td>
     <td>${formatData(p.data_pagamento)}</td>
@@ -730,6 +791,140 @@ async function salvarExtra() {
     showToast('✓ Cobrança extra adicionada!');
     carregarLocacoes();
   } catch { showToast('Erro ao adicionar.','var(--danger)'); }
+}
+
+async function carregarFinanciamentos() {
+  try {
+    const res = await fetch(API + '/financiamentos/', auth());
+    financiamentosCache = await res.json();
+    renderFinanciamentos(financiamentosCache);
+  } catch {}
+}
+
+function renderFinanciamentos(lista) {
+  document.getElementById('area-financiamentos').style.display = 'block';
+  document.getElementById('area-alertas').style.display = 'none';
+  document.getElementById('area-relatorio').style.display = 'none';
+  const tbody = document.getElementById('tabela-financiamentos');
+  const f = filtroFinanciamento === 'todos' ? lista :
+            filtroFinanciamento === 'ativos' ? lista.filter(x => !x.quitado) :
+            lista.filter(x => x.quitado);
+  if (!f.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhum financiamento.</td></tr>'; return; }
+  tbody.innerHTML = f.map(fin => `<tr>
+    <td><strong>${fin.placa||'—'}</strong></td>
+    <td>${fin.modelo||'—'}</td>
+    <td>${fin.banco}</td>
+    <td>R$ ${fin.parcela_mensal?.toFixed(2)}</td>
+    <td>${fin.parcelas_pagas}</td>
+    <td>${fin.parcelas_restantes}</td>
+    <td>R$ ${fin.total_devido?.toFixed(2)}</td>
+    <td>${fin.quitado ? '<span class="badge badge-green">Quitado</span>' : '<span class="badge badge-yellow">Ativo</span>'}</td>
+    <td>
+      ${!fin.quitado ? `<button class="action-btn" onclick="pagarParcela(${fin.id})">✓ Parcela</button>` : ''}
+      <button class="action-btn danger" onclick="excluirFinanciamento(${fin.id})">Excluir</button>
+    </td>
+  </tr>`).join('');
+}
+
+function filtrarFinanciamentos(f, el) {
+  filtroFinanciamento = f;
+  document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderFinanciamentos(financiamentosCache);
+}
+
+async function mostrarAlertas() {
+  document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('area-financiamentos').style.display = 'none';
+  document.getElementById('area-relatorio').style.display = 'none';
+  document.getElementById('area-alertas').style.display = 'block';
+  try {
+    const res = await fetch(API + '/financiamentos/alertas', auth());
+    const alertas = await res.json();
+    const div = document.getElementById('lista-alertas');
+    if (!alertas.length) { div.innerHTML = '<div class="empty-state" style="padding:48px;text-align:center;color:var(--gray)">✅ Nenhuma parcela vencendo nos próximos 5 dias!</div>'; return; }
+    div.innerHTML = alertas.map(a => `
+      <div class="alert-card">
+        <div class="alert-info">
+          <strong>${a.placa||'—'}</strong> — ${a.banco}<br>
+          Parcela: <strong>R$ ${a.parcela_mensal?.toFixed(2)}</strong> | Vence em: <strong>${formatData(a.proxima_parcela)}</strong>
+        </div>
+        <div class="alert-dias">⚠️ ${a.dias_restantes} dia(s)</div>
+      </div>`).join('');
+  } catch { document.getElementById('lista-alertas').innerHTML = '<div class="empty-state">Erro ao carregar alertas.</div>'; }
+}
+
+async function mostrarRelatorio() {
+  document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('area-financiamentos').style.display = 'none';
+  document.getElementById('area-alertas').style.display = 'none';
+  document.getElementById('area-relatorio').style.display = 'block';
+  try {
+    const res = await fetch(API + '/financiamentos/relatorio', auth());
+    const relatorio = await res.json();
+    const tbody = document.getElementById('tabela-relatorio');
+    if (!relatorio.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum dado.</td></tr>'; return; }
+    tbody.innerHTML = relatorio.map(r => `<tr>
+      <td><strong>${r.placa||'—'}</strong></td>
+      <td>${r.modelo||'—'}</td>
+      <td>${r.banco}</td>
+      <td>R$ ${r.total_pago_parcelas?.toFixed(2)}</td>
+      <td>R$ ${r.receita_gerada?.toFixed(2)}</td>
+      <td style="color:${r.saldo>=0?'var(--green)':'var(--danger)'}">R$ ${r.saldo?.toFixed(2)}</td>
+      <td>${r.situacao}</td>
+    </tr>`).join('');
+  } catch { document.getElementById('tabela-relatorio').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar.</td></tr>'; }
+}
+
+async function carregarSelectsFinanciamento() {
+  const res = await fetch(API+'/veiculos/',auth());
+  const veiculos = await res.json();
+  document.getElementById('f-veiculo').innerHTML = '<option value="">Selecione...</option>' +
+    veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');
+}
+
+async function salvarFinanciamento() {
+  const body = {
+    veiculo_id: parseInt(document.getElementById('f-veiculo').value),
+    banco: document.getElementById('f-banco').value,
+    valor_financiado: parseFloat(document.getElementById('f-valor').value)||0,
+    entrada: parseFloat(document.getElementById('f-entrada').value)||0,
+    parcela_mensal: parseFloat(document.getElementById('f-parcela').value)||0,
+    total_parcelas: parseInt(document.getElementById('f-total').value)||0,
+    parcelas_pagas: parseInt(document.getElementById('f-pagas').value)||0,
+    data_inicio: document.getElementById('f-inicio').value
+  };
+  if (!body.veiculo_id||!body.banco||!body.parcela_mensal||!body.total_parcelas||!body.data_inicio) {
+    showToast('Preencha todos os campos.','var(--warning)'); return;
+  }
+  try {
+    const res = await fetch(API+'/financiamentos/', {method:'POST',body:JSON.stringify(body),...auth()});
+    if (!res.ok) throw new Error();
+    fecharModal('modal-financiamento');
+    showToast('✓ Financiamento cadastrado!');
+    carregarFinanciamentos();
+  } catch { showToast('Erro ao salvar.','var(--danger)'); }
+}
+
+async function pagarParcela(id) {
+  if (!confirm('Registrar pagamento desta parcela?')) return;
+  try {
+    const res = await fetch(API+'/financiamentos/'+id+'/pagar-parcela', {method:'PUT',...auth()});
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    showToast('✓ '+data.mensagem);
+    carregarFinanciamentos();
+    carregarDashboard();
+  } catch { showToast('Erro ao registrar parcela.','var(--danger)'); }
+}
+
+async function excluirFinanciamento(id) {
+  if (!confirm('Excluir este financiamento?')) return;
+  try {
+    await fetch(API+'/financiamentos/'+id, {method:'DELETE',...auth()});
+    showToast('Financiamento excluído.');
+    carregarFinanciamentos();
+  } catch { showToast('Erro ao excluir.','var(--danger)'); }
 }
 
 function badgeStatus(s) {
