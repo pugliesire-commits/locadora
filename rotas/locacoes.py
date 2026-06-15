@@ -21,24 +21,18 @@ def listar_locacoes(db: Session = Depends(get_db)):
 
 @router.post("/")
 def criar_locacao(locacao: LocacaoSchema, db: Session = Depends(get_db)):
-    # Verifica se veículo existe e está disponível
     veiculo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
     if not veiculo:
         raise HTTPException(status_code=404, detail="Veículo não encontrado")
     if veiculo.status != "Disponível":
         raise HTTPException(status_code=400, detail="Veículo não está disponível")
-
-    # Calcula dias e valor total
     from datetime import datetime
     inicio = datetime.strptime(locacao.data_inicio, "%Y-%m-%d")
     fim = datetime.strptime(locacao.data_fim, "%Y-%m-%d")
     dias = (fim - inicio).days
     if dias <= 0:
         raise HTTPException(status_code=400, detail="Data de devolução deve ser após a retirada")
-
     valor_total = dias * veiculo.valor_diaria
-
-    # Cria a locação
     db_locacao = Locacao(
         cliente_id=locacao.cliente_id,
         veiculo_id=locacao.veiculo_id,
@@ -51,9 +45,7 @@ def criar_locacao(locacao: LocacaoSchema, db: Session = Depends(get_db)):
         status="Ativa"
     )
     db.add(db_locacao)
-
-    # Marca veículo como Locado
-    veiculo.status = "Locado"
+    veiculo.status = "Alugado"
     db.commit()
     db.refresh(db_locacao)
     return db_locacao
@@ -72,22 +64,16 @@ def devolver_veiculo(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Locação não encontrada")
     if locacao.status != "Ativa":
         raise HTTPException(status_code=400, detail="Locação não está ativa")
-
-    # Calcula multa por atraso
     from datetime import datetime
     hoje = datetime.today()
     fim = datetime.strptime(locacao.data_fim, "%Y-%m-%d")
     atraso = max(0, (hoje - fim).days)
     multa = atraso * locacao.valor_diaria * 1.5
-
     locacao.status = "Concluída"
     valor_final = locacao.valor_total + multa
-
-    # Libera o veículo
     veiculo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
     if veiculo:
         veiculo.status = "Disponível"
-
     db.commit()
     return {
         "mensagem": "Devolução registrada com sucesso",
@@ -95,3 +81,15 @@ def devolver_veiculo(id: int, db: Session = Depends(get_db)):
         "multa": multa,
         "valor_final": valor_final
     }
+
+@router.delete("/{id}")
+def excluir_locacao(id: int, db: Session = Depends(get_db)):
+    locacao = db.query(Locacao).filter(Locacao.id == id).first()
+    if not locacao:
+        raise HTTPException(status_code=404, detail="Locação não encontrada")
+    veiculo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
+    if veiculo:
+        veiculo.status = "Disponível"
+    db.delete(locacao)
+    db.commit()
+    return {"mensagem": "Locação excluída com sucesso"}
