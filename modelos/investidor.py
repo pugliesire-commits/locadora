@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean
+from sqlalchemy.orm import relationship
 from modelos.database import Base
 
 class Investidor(Base):
@@ -11,3 +12,7 @@ class Investidor(Base):
     cpf_cnpj = Column(String, nullable=True)
     percentual_comissao = Column(Float, default=20.0)
     ativo = Column(Boolean, default=True)
+
+    # Liga o investidor aos seus veículos e lançamentos
+    veiculos = relationship("Veiculo", back_populates="investidor")
+    lancamentos = relationship("LancamentoInvestidor", back_populates="investidor")
