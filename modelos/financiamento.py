@@ -16,7 +16,8 @@ class Financiamento(Base):
     parcelas_pagas = Column(Integer, default=0)
     data_inicio = Column(Date, default=date.today)
 
-    veiculo = relationship("Veiculo", backref="financiamentos")
+    # Trocado de backref para back_populates (evita conflito)
+    veiculo = relationship("Veiculo", back_populates="financiamentos")
 
     @property
     def parcelas_restantes(self):
