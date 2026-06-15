@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from modelos.database import engine, Base
 from rotas import veiculos, clientes, locacoes, auth
 
@@ -19,6 +21,12 @@ app.include_router(auth.router)
 app.include_router(veiculos.router)
 app.include_router(clientes.router)
 app.include_router(locacoes.router)
+# Serve o frontend
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+@app.get("/painel")
+def painel():
+    return FileResponse("index.html")
 
 @app.get("/")
 def inicio():
