@@ -824,7 +824,20 @@ async function excluirVeiculo(id){if(!podeExcluir()){showToast('Sem permissão.'
 async function carregarClientes(){try{const res=await fetch(API+'/clientes/',auth());clientesCache=await res.json();renderClientes(clientesCache);}catch{}}
 function renderClientes(lista){const tbody=document.getElementById('tabela-clientes');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhum cliente.</td></tr>';return;}tbody.innerHTML=lista.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.cpf||'—'}</td><td>${c.email||'—'}</td><td>${c.telefone||'—'}</td><td>${c.cnh||'—'}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarCliente(${c.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button>`:''}</td></tr>`).join('');}
 function buscarClientes(q){renderClientes(clientesCache.filter(c=>(c.nome+c.cpf+(c.email||'')).toLowerCase().includes(q.toLowerCase())));}
-async function salvarCliente(){const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,endereco:document.getElementById('c-endereco').value};if(!body.nome){showToast('Digite o nome.','var(--warning)');return;}try{const res=await fetch(API+'/clientes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-cliente');showToast('✓ Cliente cadastrado!');carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
+async function salvarCliente(){
+  const idEdicao=document.getElementById('modal-cliente').dataset.editId;
+  const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,endereco:document.getElementById('c-endereco').value};
+  if(!body.nome){showToast('Digite o nome.','var(--warning)');return;}
+  try{
+    const url=idEdicao?API+'/clientes/'+idEdicao:API+'/clientes/';
+    const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});
+    if(!res.ok)throw new Error();
+    fecharModal('modal-cliente');
+    document.getElementById('modal-cliente').dataset.editId='';
+    showToast(idEdicao?'✓ Cliente atualizado!':'✓ Cliente cadastrado!');
+    carregarClientes();
+  }catch{showToast('Erro.','var(--danger)');}
+}
 async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir este cliente?'))return;try{const res=await fetch(API+'/clientes/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('Cliente excluído.');await carregarClientes();}catch{showToast('Erro ao excluir.','var(--danger)');}}
 
 function editarCliente(id){
