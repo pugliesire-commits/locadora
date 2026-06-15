@@ -117,17 +117,15 @@ def desativar_investidor(investidor_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Status do investidor alterado!"}
 
-# ---------- Rota de pré-cálculo automático ----------
+# ---------- Pré-cálculo automático ----------
 
 @router.get("/precalculo/{veiculo_id}/{mes_referencia}")
 def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = Depends(get_db)):
-    """Busca automaticamente receitas, despesas e parcelas de um veículo num mês."""
     try:
         ano, mes = int(mes_referencia.split("-")[0]), int(mes_referencia.split("-")[1])
     except:
-        raise HTTPException(status_code=400, detail="Formato de mês inválido. Use YYYY-MM")
+        raise HTTPException(status_code=400, detail="Formato inválido. Use YYYY-MM")
 
-    # Busca locações do veículo nesse mês
     locacoes = db.query(Locacao).filter(
         Locacao.veiculo_id == veiculo_id,
         extract('year', Locacao.data_inicio) == ano,
@@ -135,14 +133,11 @@ def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = De
     ).all()
     locacao_ids = [l.id for l in locacoes]
 
-    # Soma pagamentos recebidos nessas locações
     receita = 0.0
     if locacao_ids:
-        from modelos.pagamento import Pagamento
         pags = db.query(Pagamento).filter(Pagamento.locacao_id.in_(locacao_ids)).all()
         receita = sum(p.valor_pago or 0 for p in pags)
 
-    # Busca despesas do veículo nesse mês
     despesas = db.query(Despesa).filter(
         Despesa.veiculo_id == veiculo_id,
         extract('year', Despesa.data) == ano,
@@ -150,12 +145,10 @@ def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = De
     ).all()
     total_despesas = sum(d.valor or 0 for d in despesas)
 
-    # Busca parcelas de financiamento do veículo
     financiamento = db.query(Financiamento).filter(
-        Financiamento.veiculo_id == veiculo_id,
-        Financiamento.quitado == False
+        Financiamento.veiculo_id == veiculo_id
     ).first()
-    parcela = financiamento.parcela_mensal if financiamento else 0.0
+    parcela = financiamento.parcela_mensal if financiamento and not financiamento.quitado else 0.0
 
     return {
         "veiculo_id": veiculo_id,
@@ -167,7 +160,7 @@ def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = De
         "total_despesas_registradas": len(despesas)
     }
 
-# ---------- Rotas de Lançamentos ----------
+# ---------- Lançamentos ----------
 
 @router.post("/lancamentos/novo")
 def criar_lancamento(dados: LancamentoCreate, db: Session = Depends(get_db)):
@@ -194,25 +187,16 @@ def criar_lancamento(dados: LancamentoCreate, db: Session = Depends(get_db)):
     db.add(novo)
     db.commit()
     db.refresh(novo)
-    return {
-        "mensagem": "Lançamento registrado!",
-        "id": novo.id,
-        "lucro_liquido": lucro,
-        "valor_comissao": comissao
-    }
+    return {"mensagem": "Lançamento registrado!", "id": novo.id, "lucro_liquido": lucro, "valor_comissao": comissao}
 
 @router.put("/lancamentos/{lancamento_id}")
 def editar_lancamento(lancamento_id: int, dados: LancamentoUpdate, db: Session = Depends(get_db)):
-    """Edita um lançamento já registrado e recalcula a comissão."""
     lanc = db.query(LancamentoInvestidor).filter(LancamentoInvestidor.id == lancamento_id).first()
     if not lanc:
         raise HTTPException(status_code=404, detail="Lançamento não encontrado")
-
     inv = db.query(Investidor).filter(Investidor.id == lanc.investidor_id).first()
-
     lucro = dados.receita_total + dados.aportes - dados.despesas_total - dados.parcelas_financiamento
     comissao = lucro * (inv.percentual_comissao / 100) if lucro > 0 else 0.0
-
     lanc.receita_total = dados.receita_total
     lanc.aportes = dados.aportes
     lanc.despesas_total = dados.despesas_total
@@ -221,12 +205,7 @@ def editar_lancamento(lancamento_id: int, dados: LancamentoUpdate, db: Session =
     lanc.valor_comissao = comissao
     lanc.observacao = dados.observacao
     db.commit()
-
-    return {
-        "mensagem": "Lançamento atualizado!",
-        "lucro_liquido": lucro,
-        "valor_comissao": comissao
-    }
+    return {"mensagem": "Lançamento atualizado!", "lucro_liquido": lucro, "valor_comissao": comissao}
 
 @router.delete("/lancamentos/{lancamento_id}")
 def excluir_lancamento(lancamento_id: int, db: Session = Depends(get_db)):
@@ -236,6 +215,8 @@ def excluir_lancamento(lancamento_id: int, db: Session = Depends(get_db)):
     db.delete(lanc)
     db.commit()
     return {"mensagem": "Lançamento excluído!"}
+
+# ---------- Extrato detalhado ----------
 
 @router.get("/{investidor_id}/extrato")
 def extrato_investidor(investidor_id: int, db: Session = Depends(get_db)):
@@ -275,4 +256,82 @@ def extrato_investidor(investidor_id: int, db: Session = Depends(get_db)):
             }
             for l in lancamentos
         ]
+    }
+
+# ---------- Extrato CONSOLIDADO por mês ----------
+
+@router.get("/{investidor_id}/extrato-consolidado")
+def extrato_consolidado(investidor_id: int, db: Session = Depends(get_db)):
+    """Agrupa lançamentos por mês+veículo e consolida os totais."""
+    inv = db.query(Investidor).filter(Investidor.id == investidor_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Investidor não encontrado")
+
+    lancamentos = db.query(LancamentoInvestidor).filter(
+        LancamentoInvestidor.investidor_id == investidor_id
+    ).order_by(LancamentoInvestidor.mes_referencia.desc()).all()
+
+    # Agrupa por mês + veículo
+    grupos = {}
+    for l in lancamentos:
+        chave = f"{l.mes_referencia}|{l.veiculo_id}"
+        if chave not in grupos:
+            grupos[chave] = {
+                "mes_referencia": l.mes_referencia,
+                "veiculo_id": l.veiculo_id,
+                "receita_total": 0.0,
+                "aportes": 0.0,
+                "despesas_total": 0.0,
+                "parcelas_financiamento": 0.0,
+                "lucro_liquido": 0.0,
+                "valor_comissao": 0.0,
+                "percentual_comissao": l.percentual_comissao,
+                "total_lancamentos": 0,
+                "lancamentos_detalhes": []
+            }
+        g = grupos[chave]
+        g["receita_total"] += l.receita_total
+        g["aportes"] += l.aportes
+        g["despesas_total"] += l.despesas_total
+        g["parcelas_financiamento"] += l.parcelas_financiamento
+        g["total_lancamentos"] += 1
+        g["lancamentos_detalhes"].append({
+            "id": l.id,
+            "receita_total": l.receita_total,
+            "aportes": l.aportes,
+            "despesas_total": l.despesas_total,
+            "parcelas_financiamento": l.parcelas_financiamento,
+            "lucro_liquido": l.lucro_liquido,
+            "valor_comissao": l.valor_comissao,
+            "observacao": l.observacao
+        })
+
+    # Recalcula lucro e comissão consolidados
+    consolidados = []
+    for g in grupos.values():
+        lucro = g["receita_total"] + g["aportes"] - g["despesas_total"] - g["parcelas_financiamento"]
+        comissao = lucro * (inv.percentual_comissao / 100) if lucro > 0 else 0.0
+        g["lucro_liquido"] = round(lucro, 2)
+        g["valor_comissao"] = round(comissao, 2)
+        g["receita_total"] = round(g["receita_total"], 2)
+        g["aportes"] = round(g["aportes"], 2)
+        g["despesas_total"] = round(g["despesas_total"], 2)
+        g["parcelas_financiamento"] = round(g["parcelas_financiamento"], 2)
+        consolidados.append(g)
+
+    total_lucro = sum(g["lucro_liquido"] for g in consolidados)
+    total_comissao = sum(g["valor_comissao"] for g in consolidados)
+
+    return {
+        "investidor": {
+            "id": inv.id,
+            "nome": inv.nome,
+            "percentual_comissao": inv.percentual_comissao
+        },
+        "resumo": {
+            "total_meses": len(consolidados),
+            "total_lucro_gerado": round(total_lucro, 2),
+            "total_comissao_paga": round(total_comissao, 2)
+        },
+        "consolidado": consolidados
     }
