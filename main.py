@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from modelos.database import engine, Base
-from rotas import veiculos, clientes, locacoes, auth, pagamentos, financiamento
+from rotas import veiculos, clientes, locacoes, auth, pagamentos, financiamento, despesas
 # Importa todos os modelos para criar as tabelas
-from modelos import veiculo, cliente, locacao, usuario, pagamento, financiamento as financiamento_model
+from modelos import veiculo, cliente, locacao, usuario, pagamento, financiamento as financiamento_model, despesa
 # Cria as tabelas no banco automaticamente
 Base.metadata.create_all(bind=engine)
 app = FastAPI(
@@ -19,6 +19,7 @@ app.include_router(clientes.router)
 app.include_router(locacoes.router)
 app.include_router(pagamentos.router)
 app.include_router(financiamento.router)
+app.include_router(despesas.router)
 # Serve o frontend
 app.mount("/static", StaticFiles(directory="."), name="static")
 @app.get("/painel")
