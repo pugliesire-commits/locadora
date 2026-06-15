@@ -735,7 +735,15 @@ function alternarTipoVeiculo(tipo){
   }
 }
 async function salvarVeiculo(){const idEdicao=document.getElementById('modal-veiculo').dataset.editId;const invId=document.getElementById('v-investidor').value;const body={marca:document.getElementById('v-marca').value,modelo:document.getElementById('v-modelo').value,placa:document.getElementById('v-placa').value,ano:parseInt(document.getElementById('v-ano').value)||2023,categoria:document.getElementById('v-categoria').value,valor_diaria:parseFloat(document.getElementById('v-diaria').value)||0,cor:document.getElementById('v-cor').value,disponivel:true,investidor_id:invId?parseInt(invId):null};try{const url=idEdicao?API+'/veiculos/'+idEdicao:API+'/veiculos/';const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-veiculo');document.getElementById('modal-veiculo').dataset.editId='';showToast(idEdicao?'✓ Veículo atualizado!':'✓ Veículo cadastrado!');carregarVeiculos();}catch{showToast('Erro ao salvar.','var(--danger)');}}
-function editarVeiculo(id){if(!podeEditar()){showToast('Sem permissão.','var(--danger)');return;}const v=veiculosCache.find(x=>x.id===id);if(!v)return;carregarSelectsInvestidor().then(()=>{document.getElementById('v-investidor').value=v.investidor_id||'';});document.getElementById('modal-veiculo-title').textContent='Editar Veículo';document.getElementById('modal-veiculo').dataset.editId=id;document.getElementById('v-marca').value=v.marca||'';document.getElementById('v-modelo').value=v.modelo||'';document.getElementById('v-placa').value=v.placa||'';document.getElementById('v-ano').value=v.ano||'';document.getElementById('v-categoria').value=v.categoria||'sedan';document.getElementById('v-diaria').value=v.valor_diaria||'';document.getElementById('v-cor').value=v.cor||'';document.getElementById('modal-veiculo').classList.add('open');}
+function editarVeiculo(id){if(!podeEditar()){showToast('Sem permissão.','var(--danger)');return;}const v=veiculosCache.find(x=>x.id===id);if(!v)return;
+  if(v.investidor_id){
+    document.querySelector('input[name="v-tipo"][value="investidor"]').checked=true;
+    alternarTipoVeiculo('investidor');
+    carregarSelectsInvestidor().then(()=>{document.getElementById('v-investidor').value=v.investidor_id;});
+  } else {
+    document.querySelector('input[name="v-tipo"][value="proprio"]').checked=true;
+    alternarTipoVeiculo('proprio');
+  }
 async function excluirVeiculo(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/veiculos/'+id,{method:'DELETE',...auth()});showToast('Veículo excluído.');carregarVeiculos();}catch{showToast('Erro.','var(--danger)');}}
 
 /* ===== CLIENTES ===== */
