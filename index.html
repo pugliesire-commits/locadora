@@ -856,7 +856,7 @@ function alternarModoExtrato(modo, el){
   modoExtratoAtual = modo;
   document.querySelectorAll('#tabs-modo-extrato .tab-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  toInvestidorAtual){ const tabAtiva=document.querySelector('#tabs-investidores-extrato .tab-btn.active'); if(tabAtiva) tabAtiva.click(); }
+ if(extratoInvestidorAtual){ const tabAtiva=document.querySelector('#tabs-investidores-extrato .tab-btn.active'); if(tabAtiva) tabAtiva.click(); }
 }
 
 function recarregarExtrato(){
