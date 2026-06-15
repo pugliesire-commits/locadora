@@ -825,7 +825,21 @@ async function carregarClientes(){try{const res=await fetch(API+'/clientes/',aut
 function renderClientes(lista){const tbody=document.getElementById('tabela-clientes');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhum cliente.</td></tr>';return;}tbody.innerHTML=lista.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.cpf||'—'}</td><td>${c.email||'—'}</td><td>${c.telefone||'—'}</td><td>${c.cnh||'—'}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarCliente(${c.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button>`:''}</td></tr>`).join('');}
 function buscarClientes(q){renderClientes(clientesCache.filter(c=>(c.nome+c.cpf+(c.email||'')).toLowerCase().includes(q.toLowerCase())));}
 async function salvarCliente(){const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,endereco:document.getElementById('c-endereco').value};if(!body.nome){showToast('Digite o nome.','var(--warning)');return;}try{const res=await fetch(API+'/clientes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-cliente');showToast('✓ Cliente cadastrado!');carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
-async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/clientes/'+id,{method:'DELETE',...auth()});showToast('Cliente excluído.');carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
+async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir este cliente?'))return;try{const res=await fetch(API+'/clientes/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('Cliente excluído.');await carregarClientes();}catch{showToast('Erro ao excluir.','var(--danger)');}}
+
+function editarCliente(id){
+  if(!podeEditar()){showToast('Sem permissão.','var(--danger)');return;}
+  const c=clientesCache.find(x=>x.id===id);
+  if(!c)return;
+  document.getElementById('c-nome').value=c.nome||'';
+  document.getElementById('c-cpf').value=c.cpf||'';
+  document.getElementById('c-cnh').value=c.cnh||'';
+  document.getElementById('c-email').value=c.email||'';
+  document.getElementById('c-telefone').value=c.telefone||'';
+  document.getElementById('c-endereco').value=c.endereco||'';
+  document.getElementById('modal-cliente').dataset.editId=id;
+  document.getElementById('modal-cliente').classList.add('open');
+}
 
 /* ===== LOCAÇÕES ===== */
 async function carregarLocacoes(){try{const[rl,rp]=await Promise.all([fetch(API+'/locacoes/',auth()),fetch(API+'/pagamentos/',auth())]);const locacoes=await rl.json(),pagamentos=await rp.json();const pMap={};pagamentos.forEach(p=>pMap[p.locacao_id]=p);const tbody=document.getElementById('tabela-locacoes');if(!locacoes.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhuma locação.</td></tr>';return;}tbody.innerHTML=locacoes.map(l=>`<tr><td>#${l.id}</td><td>${l.cliente_id}</td><td>${l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>${l.dias} dias</td><td>R$ ${l.valor_total}</td><td>${badgeStatus(l.status)}</td><td>${podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirPagamento(${l.id},${l.valor_total})">Pagar</button>`:''}<button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>${podeExcluir()?`<button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>`:''}</td></tr>`).join('');}catch{}}
