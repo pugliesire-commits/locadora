@@ -21,6 +21,7 @@ app.include_router(auth.router)
 app.include_router(veiculos.router)
 app.include_router(clientes.router)
 app.include_router(locacoes.router)
+app.include_router(pagamentos.router)
 # Serve o frontend
 app.mount("/static", StaticFiles(directory="."), name="static")
 
