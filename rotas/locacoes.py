@@ -5,6 +5,7 @@ from typing import Optional
 from modelos.database import get_db
 from modelos.locacao import Locacao
 from modelos.veiculo import Veiculo
+from modelos.pagamento import Pagamento, CobrancaExtra
 
 router = APIRouter(prefix="/locacoes", tags=["Locações"])
 
@@ -87,6 +88,11 @@ def excluir_locacao(id: int, db: Session = Depends(get_db)):
     locacao = db.query(Locacao).filter(Locacao.id == id).first()
     if not locacao:
         raise HTTPException(status_code=404, detail="Locação não encontrada")
+    # Exclui cobranças extras vinculadas
+    db.query(CobrancaExtra).filter(CobrancaExtra.locacao_id == id).delete()
+    # Exclui pagamentos vinculados
+    db.query(Pagamento).filter(Pagamento.locacao_id == id).delete()
+    # Libera o veículo
     veiculo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
     if veiculo:
         veiculo.status = "Disponível"
