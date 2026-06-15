@@ -118,6 +118,17 @@
   .formula-box { background: #9eff1f11; border: 1px solid #9eff1f33; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--gray); }
   .formula-box strong { color: var(--green); }
   .auto-box { background: #378ADD11; border: 1px solid #378ADD33; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: var(--info); display: none; }
+  /* Consolidado */
+  .consolidado-row { background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+  .consolidado-header { display: grid; grid-template-columns: 100px 80px 1fr 1fr 1fr 1fr 1fr 1fr 80px; gap: 8px; padding: 14px 18px; align-items: center; cursor: pointer; transition: background 0.15s; }
+  .consolidado-header:hover { background: #252525; }
+  .consolidado-detalhes { display: none; background: #1a1a1a; border-top: 1px solid var(--border); }
+  .consolidado-detalhes.aberto { display: block; }
+  .consolidado-detalhes table { margin: 0; }
+  .consolidado-detalhes thead th { background: #111; font-size: 10px; }
+  .col-header { color: var(--gray); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .expandir-btn { color: var(--gray); font-size: 16px; text-align: center; transition: transform 0.2s; }
+  .expandir-btn.aberto { transform: rotate(180deg); }
 </style>
 </head>
 <body>
@@ -313,7 +324,11 @@
         </div>
         <div id="page-extrato" style="display:none">
           <div class="tabs-bar" id="tabs-investidores-extrato">
-            <span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione um investidor:</span>
+            <span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione:</span>
+          </div>
+          <div class="tabs-bar" id="tabs-modo-extrato" style="display:none">
+            <button class="tab-btn active" id="btn-consolidado" onclick="alternarModoExtrato('consolidado',this)">📊 Consolidado</button>
+            <button class="tab-btn" id="btn-detalhado" onclick="alternarModoExtrato('detalhado',this)">📋 Detalhado</button>
           </div>
           <div id="area-extrato-conteudo">
             <div class="empty-state">Selecione um investidor acima para ver o extrato.</div>
@@ -521,7 +536,7 @@
       <div class="field full"><label>Mês de Referência</label><input id="lanc-mes" type="month" onchange="verificarAutoPreenchimento()"/></div>
     </div>
     <div class="auto-box" id="auto-box">
-      🤖 Dados encontrados para este veículo/mês! <button class="btn-auto" onclick="preencherAutomatico()" style="margin-left:10px;padding:4px 12px;font-size:11px">Preencher automaticamente</button>
+      🤖 Dados encontrados! <button class="btn-auto" onclick="preencherAutomatico()" style="margin-left:10px;padding:4px 12px;font-size:11px">Preencher automaticamente</button>
     </div>
     <div class="modal-grid" style="margin-top:4px">
       <div class="field"><label>Receita Total (R$)</label><input id="lanc-receita" type="number" placeholder="0.00" step="0.01" oninput="calcularPreview()"/></div>
@@ -541,355 +556,4 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script>
-const API = '';
-let TOKEN = '';
-let PERFIL = '';
-let paginaAtual = 'dashboard';
-let veiculosCache = [];
-let clientesCache = [];
-let pagamentosCache = [];
-let financiamentosCache = [];
-let despesasCache = [];
-let investidoresCache = [];
-let filtroVeiculo = 'todos';
-let filtroPagamento = 'todos';
-let filtroFinanciamento = 'todos';
-let locacaoSelecionada = null;
-let lancamentoEditandoId = null;
-let precalculoCache = null;
-
-const PERFIL_LABELS = { admin: 'Administrador', atendente: 'Atendente', financeiro: 'Financeiro' };
-function podeEditar() { return PERFIL === 'admin'; }
-function podeExcluir() { return PERFIL === 'admin'; }
-function podeLancarFinanceiro() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
-function podeGerenciarInvestidores() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
-
-async function fazerLogin() {
-  const email = document.getElementById('login-email').value;
-  const senha = document.getElementById('login-senha').value;
-  const erro = document.getElementById('login-error');
-  erro.style.display = 'none';
-  try {
-    const fd = new FormData();
-    fd.append('username', email); fd.append('password', senha);
-    const res = await fetch(API + '/auth/login', { method: 'POST', body: fd });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    TOKEN = data.access_token;
-    const me = await fetch(API + '/auth/eu', { headers: { Authorization: 'Bearer ' + TOKEN } });
-    if (me.ok) {
-      const user = await me.json();
-      PERFIL = user.perfil || 'atendente';
-      document.getElementById('user-name').textContent = user.nome || email.split('@')[0];
-      document.getElementById('user-avatar').textContent = (user.nome || 'AD').substring(0,2).toUpperCase();
-      document.getElementById('user-role').textContent = PERFIL_LABELS[PERFIL] || PERFIL;
-      document.getElementById('perfil-badge').textContent = PERFIL_LABELS[PERFIL] || PERFIL;
-      if (PERFIL === 'admin') document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'flex');
-    }
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    carregarDashboard();
-  } catch { erro.style.display = 'block'; }
-}
-
-function fazerLogout() {
-  TOKEN = ''; PERFIL = '';
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'none');
-}
-
-function auth() { return { headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' } }; }
-
-function mostrarPagina(nome, el) {
-  document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-  document.getElementById('page-' + nome).style.display = 'block';
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  el.classList.add('active');
-  paginaAtual = nome;
-  const titulos = {
-    dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações',
-    pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais',
-    indicadores:'Indicadores Financeiros', usuarios:'Gestão de Usuários',
-    investidores:'Investidores', extrato:'Extrato Mensal'
-  };
-  document.getElementById('topbar-title').textContent = titulos[nome] || nome;
-  const semBotao = ['dashboard', 'indicadores', 'extrato'];
-  document.getElementById('btn-novo').style.display = semBotao.includes(nome) ? 'none' : 'flex';
-  if (nome === 'usuarios') document.getElementById('btn-novo').style.display = 'flex';
-  if (nome === 'veiculos') carregarVeiculos();
-  else if (nome === 'clientes') carregarClientes();
-  else if (nome === 'locacoes') carregarLocacoes();
-  else if (nome === 'pagamentos') carregarPagamentos();
-  else if (nome === 'financiamentos') carregarFinanciamentos();
-  else if (nome === 'despesas') carregarDespesas();
-  else if (nome === 'indicadores') carregarIndicadores();
-  else if (nome === 'usuarios') carregarUsuarios();
-  else if (nome === 'investidores') carregarInvestidores();
-  else if (nome === 'extrato') carregarTabsExtrato();
-  else carregarDashboard();
-}
-
-function showToast(msg, cor) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.borderColor = cor || 'var(--green)'; t.style.color = cor || 'var(--green)';
-  t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000);
-}
-
-function abrirModal() {
-  if (paginaAtual === 'veiculos') { carregarSelectsInvestidor(); document.getElementById('modal-veiculo-title').textContent = 'Novo Veículo'; document.getElementById('modal-veiculo').dataset.editId = ''; document.getElementById('modal-veiculo').classList.add('open'); }
-  else if (paginaAtual === 'clientes') document.getElementById('modal-cliente').classList.add('open');
-  else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
-  else if (paginaAtual === 'pagamentos') showToast('Selecione uma locação para registrar pagamento.');
-  else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
-  else if (paginaAtual === 'despesas') { carregarSelectsDespesa(); document.getElementById('modal-despesa').classList.add('open'); }
-  else if (paginaAtual === 'usuarios') document.getElementById('modal-usuario').classList.add('open');
-  else if (paginaAtual === 'investidores') {
-    document.getElementById('modal-inv-title').textContent = 'Novo Investidor';
-    document.getElementById('modal-investidor').dataset.editId = '';
-    ['inv-nome','inv-cpf','inv-email','inv-telefone','inv-comissao'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('modal-investidor').classList.add('open');
-  }
-}
-
-function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
-
-/* ===== DASHBOARD ===== */
-async function carregarDashboard() {
-  try {
-    const [rv,rc,rl,rp,rf,rd] = await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/clientes/',auth()),fetch(API+'/locacoes/',auth()),fetch(API+'/pagamentos/',auth()),fetch(API+'/financiamentos/dashboard',auth()),fetch(API+'/despesas/dashboard',auth())]);
-    const veiculos=await rv.json(),clientes=await rc.json(),locacoes=await rl.json(),pagamentos=await rp.json(),finDash=rf.ok?await rf.json():{},despDash=rd.ok?await rd.json():{};
-    document.getElementById('stat-veiculos').textContent=veiculos.length;
-    document.getElementById('stat-disponiveis').textContent=veiculos.filter(v=>v.status==='Disponível').length;
-    document.getElementById('stat-clientes').textContent=clientes.length;
-    document.getElementById('stat-locacoes').textContent=locacoes.filter(l=>l.status==='Ativa').length;
-    const receita=pagamentos.reduce((s,p)=>s+(p.valor_pago||0),0);
-    document.getElementById('stat-receita').textContent='R$ '+receita.toLocaleString('pt-BR',{minimumFractionDigits:2});
-    document.getElementById('stat-pendentes').textContent=pagamentos.filter(p=>p.status!=='pago').length;
-    document.getElementById('stat-aberto').textContent='R$ '+pagamentos.reduce((s,p)=>s+(p.valor_pendente||0),0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    document.getElementById('stat-parcelas-mes').textContent=finDash.total_parcelas_mes?'R$ '+finDash.total_parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    document.getElementById('stat-fin-ativos').textContent=finDash.financiamentos_ativos??'0';
-    document.getElementById('stat-fin-quitados').textContent=finDash.financiamentos_quitados??'0';
-    document.getElementById('stat-despesas-mes').textContent=despDash.total_despesas_mes?'R$ '+despDash.total_despesas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    document.getElementById('stat-despesas-geral').textContent=despDash.total_despesas_geral?'R$ '+despDash.total_despesas_geral.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    const tbody=document.getElementById('dash-locacoes');
-    const recentes=locacoes.slice(-5).reverse();
-    if(!recentes.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma locação.</td></tr>';return;}
-    const pMap={};pagamentos.forEach(p=>pMap[p.locacao_id]=p);
-    tbody.innerHTML=recentes.map(l=>`<tr><td>${l.cliente_id}</td><td>${l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_total}</td><td>${pMap[l.id]?badgePagamento(pMap[l.id].status):'<span class="badge badge-gray">Sem pagamento</span>'}</td></tr>`).join('');
-  } catch(e){console.error(e);}
-}
-
-/* ===== VEÍCULOS ===== */
-async function carregarVeiculos(){try{const res=await fetch(API+'/veiculos/',auth());veiculosCache=await res.json();renderVeiculos(veiculosCache);}catch{}}
-function renderVeiculos(lista){const tbody=document.getElementById('tabela-veiculos');const f=filtroVeiculo==='todos'?lista:lista.filter(v=>v.status===filtroVeiculo);if(!f.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">Nenhum veículo.</td></tr>';return;}tbody.innerHTML=f.map(v=>`<tr><td><strong>${v.marca}</strong> ${v.modelo}</td><td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td><td>R$ ${v.valor_diaria}</td><td>${badgeStatus(v.status)}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>`:''}</td></tr>`).join('');}
-function filtrarVeiculos(f,el){filtroVeiculo=f;document.querySelectorAll('#page-veiculos .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderVeiculos(veiculosCache);}
-function buscarVeiculos(q){renderVeiculos(veiculosCache.filter(v=>(v.marca+v.modelo+v.placa).toLowerCase().includes(q.toLowerCase())));}
-async function carregarSelectsInvestidor(){try{const res=await fetch(API+'/investidores/',auth());const invs=await res.json();document.getElementById('v-investidor').innerHTML='<option value="">Nenhum</option>'+invs.map(i=>`<option value="${i.id}">${i.nome}</option>`).join('');}catch{}}
-async function salvarVeiculo(){const idEdicao=document.getElementById('modal-veiculo').dataset.editId;const invId=document.getElementById('v-investidor').value;const body={marca:document.getElementById('v-marca').value,modelo:document.getElementById('v-modelo').value,placa:document.getElementById('v-placa').value,ano:parseInt(document.getElementById('v-ano').value)||2023,categoria:document.getElementById('v-categoria').value,valor_diaria:parseFloat(document.getElementById('v-diaria').value)||0,cor:document.getElementById('v-cor').value,disponivel:true,investidor_id:invId?parseInt(invId):null};try{const url=idEdicao?API+'/veiculos/'+idEdicao:API+'/veiculos/';const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-veiculo');document.getElementById('modal-veiculo').dataset.editId='';showToast(idEdicao?'✓ Veículo atualizado!':'✓ Veículo cadastrado!');carregarVeiculos();}catch{showToast('Erro ao salvar.','var(--danger)');}}
-function editarVeiculo(id){if(!podeEditar()){showToast('Sem permissão.','var(--danger)');return;}const v=veiculosCache.find(x=>x.id===id);if(!v)return;carregarSelectsInvestidor().then(()=>{document.getElementById('v-investidor').value=v.investidor_id||'';});document.getElementById('modal-veiculo-title').textContent='Editar Veículo';document.getElementById('modal-veiculo').dataset.editId=id;document.getElementById('v-marca').value=v.marca||'';document.getElementById('v-modelo').value=v.modelo||'';document.getElementById('v-placa').value=v.placa||'';document.getElementById('v-ano').value=v.ano||'';document.getElementById('v-categoria').value=v.categoria||'sedan';document.getElementById('v-diaria').value=v.valor_diaria||'';document.getElementById('v-cor').value=v.cor||'';document.getElementById('modal-veiculo').classList.add('open');}
-async function excluirVeiculo(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/veiculos/'+id,{method:'DELETE',...auth()});showToast('Veículo excluído.');carregarVeiculos();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== CLIENTES ===== */
-async function carregarClientes(){try{const res=await fetch(API+'/clientes/',auth());clientesCache=await res.json();renderClientes(clientesCache);}catch{}}
-function renderClientes(lista){const tbody=document.getElementById('tabela-clientes');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhum cliente.</td></tr>';return;}tbody.innerHTML=lista.map(c=>`<tr><td><strong>${c.nome}</strong></td><td>${c.cpf||'—'}</td><td>${c.email||'—'}</td><td>${c.telefone||'—'}</td><td>${c.cnh||'—'}</td><td>${podeExcluir()?`<button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button>`:''}</td></tr>`).join('');}
-function buscarClientes(q){renderClientes(clientesCache.filter(c=>(c.nome+c.cpf+(c.email||'')).toLowerCase().includes(q.toLowerCase())));}
-async function salvarCliente(){const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,endereco:document.getElementById('c-endereco').value};if(!body.nome){showToast('Digite o nome.','var(--warning)');return;}try{const res=await fetch(API+'/clientes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-cliente');showToast('✓ Cliente cadastrado!');carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
-async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/clientes/'+id,{method:'DELETE',...auth()});showToast('Cliente excluído.');carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== LOCAÇÕES ===== */
-async function carregarLocacoes(){try{const[rl,rp]=await Promise.all([fetch(API+'/locacoes/',auth()),fetch(API+'/pagamentos/',auth())]);const locacoes=await rl.json(),pagamentos=await rp.json();const pMap={};pagamentos.forEach(p=>pMap[p.locacao_id]=p);const tbody=document.getElementById('tabela-locacoes');if(!locacoes.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhuma locação.</td></tr>';return;}tbody.innerHTML=locacoes.map(l=>`<tr><td>#${l.id}</td><td>${l.cliente_id}</td><td>${l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>${l.dias} dias</td><td>R$ ${l.valor_total}</td><td>${badgeStatus(l.status)}</td><td>${podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirPagamento(${l.id},${l.valor_total})">Pagar</button>`:''}<button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>${podeExcluir()?`<button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>`:''}</td></tr>`).join('');}catch{}}
-async function excluirLocacao(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/locacoes/'+id,{method:'DELETE',...auth()});showToast('Locação excluída.');carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-async function carregarSelectsLocacao(){const[rv,rc]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/clientes/',auth())]);const veiculos=await rv.json(),clientes=await rc.json();document.getElementById('l-inicio').value='';document.getElementById('l-fim').value='';document.getElementById('l-veiculo').innerHTML='<option value="">Selecione...</option>'+veiculos.filter(v=>v.status==='Disponível').map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');document.getElementById('l-cliente').innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');}
-async function salvarLocacao(){const body={cliente_id:parseInt(document.getElementById('l-cliente').value),veiculo_id:parseInt(document.getElementById('l-veiculo').value),data_inicio:document.getElementById('l-inicio').value,data_fim:document.getElementById('l-fim').value};if(!body.cliente_id||!body.veiculo_id||!body.data_inicio||!body.data_fim){showToast('Preencha todos os campos.','var(--warning)');return;}try{const res=await fetch(API+'/locacoes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();const data=await res.json();fecharModal('modal-locacao');showToast('✓ Locação criada! Total: R$ '+data.valor_total);carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== PAGAMENTOS ===== */
-async function carregarPagamentos(){try{const res=await fetch(API+'/pagamentos/',auth());pagamentosCache=await res.json();renderPagamentos(pagamentosCache);}catch{}}
-function renderPagamentos(lista){const tbody=document.getElementById('tabela-pagamentos');const f=filtroPagamento==='todos'?lista:lista.filter(p=>p.status===filtroPagamento);if(!f.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum pagamento.</td></tr>';return;}tbody.innerHTML=f.map(p=>`<tr><td>#${p.locacao_id}</td><td>R$ ${p.valor_total?.toFixed(2)}</td><td>R$ ${(p.valor_pago||0).toFixed(2)}</td><td style="color:${p.valor_pendente>0?'var(--warning)':'var(--green)'}">R$ ${(p.valor_pendente||0).toFixed(2)}</td><td>${formatForma(p.forma_pagamento)}</td><td>${formatData(p.data_pagamento)}</td><td>${badgePagamento(p.status)}</td><td>${podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirPagamento(${p.locacao_id},${p.valor_pendente})">+ Pagar</button>`:''}<button class="action-btn" onclick="abrirExtra(${p.locacao_id})">+ Extra</button></td></tr>`).join('');}
-function filtrarPagamentos(f,el){filtroPagamento=f;document.querySelectorAll('#page-pagamentos .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderPagamentos(pagamentosCache);}
-async function abrirPagamento(locacaoId,valorPendente){locacaoSelecionada=locacaoId;try{const res=await fetch(API+'/pagamentos/resumo/'+locacaoId,auth());if(res.ok){const r=await res.json();const div=document.getElementById('resumo-pagamento');div.style.display='block';div.innerHTML=`<div class="resumo-row"><span class="resumo-label">Valor base</span><span class="resumo-value">R$ ${r.valor_base?.toFixed(2)}</span></div><div class="resumo-row"><span class="resumo-label">Extras</span><span class="resumo-value">R$ ${r.total_extras?.toFixed(2)}</span></div><div class="resumo-row"><span class="resumo-label">Total</span><span class="resumo-value">R$ ${r.valor_total?.toFixed(2)}</span></div><div class="resumo-row"><span class="resumo-label">Já pago</span><span class="resumo-value green">R$ ${r.valor_pago?.toFixed(2)}</span></div><div class="resumo-row"><span class="resumo-label">Pendente</span><span class="resumo-value ${r.valor_pendente>0?'red':'green'}">R$ ${r.valor_pendente?.toFixed(2)}</span></div>`;document.getElementById('p-valor').value=r.valor_pendente>0?r.valor_pendente.toFixed(2):'';}}catch{document.getElementById('resumo-pagamento').style.display='none';document.getElementById('p-valor').value=valorPendente||'';}document.getElementById('modal-pagamento').classList.add('open');}
-async function salvarPagamento(){const body={locacao_id:locacaoSelecionada,valor_pago:parseFloat(document.getElementById('p-valor').value)||0,forma_pagamento:document.getElementById('p-forma').value,observacao:document.getElementById('p-obs').value};try{const res=await fetch(API+'/pagamentos/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();const data=await res.json();fecharModal('modal-pagamento');showToast('✓ Pagamento registrado! Status: '+data.status);carregarPagamentos();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-function abrirExtra(locacaoId){locacaoSelecionada=locacaoId;document.getElementById('modal-extra').classList.add('open');}
-async function salvarExtra(){const body={locacao_id:locacaoSelecionada,tipo:document.getElementById('e-tipo').value,descricao:document.getElementById('e-desc').value,valor:parseFloat(document.getElementById('e-valor').value)||0};try{const res=await fetch(API+'/pagamentos/extras',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-extra');showToast('✓ Cobrança extra adicionada!');carregarLocacoes();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== FINANCIAMENTOS ===== */
-async function carregarFinanciamentos(){try{const res=await fetch(API+'/financiamentos/',auth());financiamentosCache=await res.json();renderFinanciamentos(financiamentosCache);}catch{}}
-function renderFinanciamentos(lista){document.getElementById('area-financiamentos').style.display='block';document.getElementById('area-alertas').style.display='none';document.getElementById('area-relatorio').style.display='none';const tbody=document.getElementById('tabela-financiamentos');const f=filtroFinanciamento==='todos'?lista:filtroFinanciamento==='ativos'?lista.filter(x=>!x.quitado):lista.filter(x=>x.quitado);if(!f.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhum financiamento.</td></tr>';return;}tbody.innerHTML=f.map(fin=>`<tr><td><strong>${fin.placa||'—'}</strong></td><td>${fin.modelo||'—'}</td><td>${fin.banco}</td><td>R$ ${fin.parcela_mensal?.toFixed(2)}</td><td>${fin.parcelas_pagas}</td><td>${fin.parcelas_restantes}</td><td>R$ ${fin.total_devido?.toFixed(2)}</td><td>${fin.quitado?'<span class="badge badge-green">Quitado</span>':'<span class="badge badge-yellow">Ativo</span>'}</td><td>${!fin.quitado&&podeLancarFinanceiro()?`<button class="action-btn" onclick="pagarParcela(${fin.id})">✓ Parcela</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirFinanciamento(${fin.id})">Excluir</button>`:''}</td></tr>`).join('');}
-function filtrarFinanciamentos(f,el){filtroFinanciamento=f;document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderFinanciamentos(financiamentosCache);}
-async function mostrarAlertas(){document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('area-financiamentos').style.display='none';document.getElementById('area-relatorio').style.display='none';document.getElementById('area-alertas').style.display='block';try{const res=await fetch(API+'/financiamentos/alertas',auth());const alertas=await res.json();const div=document.getElementById('lista-alertas');if(!alertas.length){div.innerHTML='<div class="empty-state" style="padding:48px;text-align:center;color:var(--gray)">✅ Nenhuma parcela vencendo!</div>';return;}div.innerHTML=alertas.map(a=>`<div class="alert-card"><div class="alert-info"><strong>${a.placa||'—'}</strong> — ${a.banco}<br>Parcela: <strong>R$ ${a.parcela_mensal?.toFixed(2)}</strong> | Vence: <strong>${formatData(a.proxima_parcela)}</strong></div><div class="alert-dias">⚠️ ${a.dias_restantes} dia(s)</div></div>`).join('');}catch{document.getElementById('lista-alertas').innerHTML='<div class="empty-state">Erro.</div>';}}
-async function mostrarRelatorio(){document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('area-financiamentos').style.display='none';document.getElementById('area-alertas').style.display='none';document.getElementById('area-relatorio').style.display='block';try{const res=await fetch(API+'/financiamentos/relatorio',auth());const relatorio=await res.json();const tbody=document.getElementById('tabela-relatorio');if(!relatorio.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">Nenhum dado.</td></tr>';return;}tbody.innerHTML=relatorio.map(r=>`<tr><td><strong>${r.placa||'—'}</strong></td><td>${r.modelo||'—'}</td><td>${r.banco}</td><td>R$ ${r.total_pago_parcelas?.toFixed(2)}</td><td>R$ ${r.receita_gerada?.toFixed(2)}</td><td style="color:${r.saldo>=0?'var(--green)':'var(--danger)'}">R$ ${r.saldo?.toFixed(2)}</td><td>${r.situacao}</td></tr>`).join('');}catch{document.getElementById('tabela-relatorio').innerHTML='<tr><td colspan="7" class="empty-state">Erro.</td></tr>';}}
-async function carregarSelectsFinanciamento(){const res=await fetch(API+'/veiculos/',auth());const veiculos=await res.json();document.getElementById('f-veiculo').innerHTML='<option value="">Selecione...</option>'+veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');}
-async function salvarFinanciamento(){const body={veiculo_id:parseInt(document.getElementById('f-veiculo').value),banco:document.getElementById('f-banco').value,valor_financiado:parseFloat(document.getElementById('f-valor').value)||0,entrada:parseFloat(document.getElementById('f-entrada').value)||0,parcela_mensal:parseFloat(document.getElementById('f-parcela').value)||0,total_parcelas:parseInt(document.getElementById('f-total').value)||0,parcelas_pagas:parseInt(document.getElementById('f-pagas').value)||0,data_inicio:document.getElementById('f-inicio').value};if(!body.veiculo_id||!body.banco||!body.parcela_mensal||!body.total_parcelas||!body.data_inicio){showToast('Preencha todos os campos.','var(--warning)');return;}try{const res=await fetch(API+'/financiamentos/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-financiamento');showToast('✓ Financiamento cadastrado!');carregarFinanciamentos();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-async function pagarParcela(id){if(!confirm('Registrar pagamento desta parcela?'))return;try{const res=await fetch(API+'/financiamentos/'+id+'/pagar-parcela',{method:'PUT',...auth()});if(!res.ok)throw new Error();const data=await res.json();showToast('✓ '+data.mensagem);carregarFinanciamentos();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-async function excluirFinanciamento(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/financiamentos/'+id,{method:'DELETE',...auth()});showToast('Excluído.');carregarFinanciamentos();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== DESPESAS ===== */
-async function carregarDespesas(){try{const res=await fetch(API+'/despesas/',auth());despesasCache=await res.json();renderDespesas(despesasCache);}catch{}}
-function renderDespesas(lista){document.getElementById('area-despesas-lista').style.display='block';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';const tbody=document.getElementById('tabela-despesas');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma despesa.</td></tr>';return;}tbody.innerHTML=lista.map(d=>`<tr><td>${formatData(d.data)}</td><td>${formatCategoria(d.categoria)}</td><td>${d.descricao}</td><td>${d.placa||'<span style="color:var(--gray)">Geral</span>'}</td><td style="color:var(--danger)">R$ ${d.valor?.toFixed(2)}</td><td>${podeExcluir()?`<button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button>`:''}</td></tr>`).join('');}
-async function mostrarDespesas(tipo,el){document.querySelectorAll('#page-despesas .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('area-despesas-lista').style.display='none';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';if(tipo==='lista'){document.getElementById('area-despesas-lista').style.display='block';renderDespesas(despesasCache);return;}if(tipo==='categoria'){document.getElementById('area-despesas-categoria').style.display='block';try{const res=await fetch(API+'/despesas/por-categoria',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-categoria');if(!data.length){tbody.innerHTML='<tr><td colspan="3" class="empty-state">Nenhuma.</td></tr>';return;}tbody.innerHTML=data.map(d=>`<tr><td>${formatCategoria(d.categoria)}</td><td>${d.quantidade}</td><td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td></tr>`).join('');}catch{}}if(tipo==='veiculo'){document.getElementById('area-despesas-veiculo').style.display='block';try{const res=await fetch(API+'/despesas/por-veiculo',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-veiculo');if(!data.length){tbody.innerHTML='<tr><td colspan="5" class="empty-state">Nenhum dado.</td></tr>';return;}tbody.innerHTML=data.map(d=>`<tr><td><strong>${d.placa}</strong></td><td>${d.marca} ${d.modelo}</td><td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td><td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td><td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td></tr>`).join('');}catch{}}}
-async function carregarSelectsDespesa(){const res=await fetch(API+'/veiculos/',auth());const veiculos=await res.json();document.getElementById('d-veiculo').innerHTML='<option value="">Nenhum (despesa geral)</option>'+veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');document.getElementById('d-data').value=new Date().toISOString().split('T')[0];}
-async function salvarDespesa(){const veiculoId=document.getElementById('d-veiculo').value;const body={categoria:document.getElementById('d-categoria').value,descricao:document.getElementById('d-descricao').value,valor:parseFloat(document.getElementById('d-valor').value)||0,data:document.getElementById('d-data').value,veiculo_id:veiculoId?parseInt(veiculoId):null};if(!body.descricao||!body.valor||!body.data){showToast('Preencha todos os campos.','var(--warning)');return;}try{const res=await fetch(API+'/despesas/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-despesa');showToast('✓ Despesa registrada!');carregarDespesas();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-async function excluirDespesa(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/despesas/'+id,{method:'DELETE',...auth()});showToast('Despesa excluída.');carregarDespesas();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== INDICADORES ===== */
-async function carregarIndicadores(){try{const[rr,rf]=await Promise.all([fetch(API+'/indicadores/resumo',auth()),fetch(API+'/indicadores/fluxo-caixa',auth())]);const resumo=await rr.json(),fluxo=await rf.json();document.getElementById('ind-receita').textContent='R$ '+resumo.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-despesas').textContent='R$ '+resumo.despesas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-parcelas').textContent='R$ '+resumo.parcelas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});const lucro=resumo.lucro_liquido;document.getElementById('ind-lucro').textContent='R$ '+lucro.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-lucro').style.color=lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-margem').textContent=resumo.margem_lucro+'%';document.getElementById('ind-margem').style.color=resumo.margem_lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-entradas').textContent='R$ '+fluxo.entradas.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saidas').textContent='R$ '+fluxo.saidas.toLocaleString('pt-BR',{minimumFractionDigits:2});const saldo=fluxo.saldo;document.getElementById('ind-saldo').textContent='R$ '+saldo.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saldo').style.color=saldo>=0?'var(--green)':'var(--danger)';}catch(e){console.error(e);}try{const re=await fetch(API+'/indicadores/evolucao-mensal',auth());const evolucao=await re.json();document.getElementById('ind-ano').textContent=new Date().getFullYear();document.getElementById('tabela-evolucao').innerHTML=evolucao.map(m=>`<tr><td><strong>${m.mes}</strong></td><td style="color:var(--green)">R$ ${m.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${m.despesas.toFixed(2)}</td><td style="color:${m.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${m.lucro.toFixed(2)}</strong></td></tr>`).join('');}catch(e){console.error(e);}try{const rv=await fetch(API+'/indicadores/roi-por-veiculo',auth());const roi=await rv.json();const tbody=document.getElementById('tabela-roi');if(!roi.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum dado.</td></tr>';return;}tbody.innerHTML=roi.map(r=>`<tr><td><strong>${r.placa}</strong></td><td>${r.marca} ${r.modelo}</td><td style="color:var(--green)">R$ ${r.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${r.despesas.toFixed(2)}</td><td style="color:var(--warning)">R$ ${r.parcelas.toFixed(2)}</td><td style="color:${r.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${r.lucro.toFixed(2)}</strong></td><td style="color:${r.roi>=0?'var(--green)':'var(--danger)'};font-weight:700">${r.roi}%</td><td>${r.situacao}</td></tr>`).join('');}catch(e){console.error(e);}}
-
-/* ===== USUÁRIOS ===== */
-async function carregarUsuarios(){try{const res=await fetch(API+'/auth/usuarios',auth());if(!res.ok){document.getElementById('tabela-usuarios').innerHTML='<tr><td colspan="5" class="empty-state">Sem permissão.</td></tr>';return;}const usuarios=await res.json();const tbody=document.getElementById('tabela-usuarios');if(!usuarios.length){tbody.innerHTML='<tr><td colspan="5" class="empty-state">Nenhum usuário.</td></tr>';return;}tbody.innerHTML=usuarios.map(u=>`<tr><td><strong>${u.nome}</strong></td><td>${u.email}</td><td>${badgePerfil(u.perfil)}</td><td>${u.ativo?'<span class="badge badge-green">Ativo</span>':'<span class="badge badge-red">Inativo</span>'}</td><td>${u.perfil!=='admin'?`<button class="action-btn" onclick="toggleUsuario(${u.id})">${u.ativo?'Desativar':'Ativar'}</button><button class="action-btn danger" onclick="excluirUsuario(${u.id})">Excluir</button>`:'<span style="color:var(--gray);font-size:11px">Protegido</span>'}</td></tr>`).join('');}catch{}}
-async function salvarUsuario(){const body={nome:document.getElementById('u-nome').value,email:document.getElementById('u-email').value,senha:document.getElementById('u-senha').value,perfil:document.getElementById('u-perfil').value};if(!body.nome||!body.email||!body.senha){showToast('Preencha todos os campos.','var(--warning)');return;}try{const res=await fetch(API+'/auth/registrar',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-usuario');showToast('✓ Usuário criado!');carregarUsuarios();}catch{showToast('Erro.','var(--danger)');}}
-async function excluirUsuario(id){if(!confirm('Excluir?'))return;try{await fetch(API+'/auth/usuarios/'+id,{method:'DELETE',...auth()});showToast('Usuário excluído.');carregarUsuarios();}catch{showToast('Erro.','var(--danger)');}}
-async function toggleUsuario(id){try{const res=await fetch(API+'/auth/usuarios/'+id+'/toggle',{method:'PUT',...auth()});if(!res.ok)throw new Error();const data=await res.json();showToast('✓ '+data.mensagem);carregarUsuarios();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== INVESTIDORES ===== */
-async function carregarInvestidores(){try{const res=await fetch(API+'/investidores/',auth());investidoresCache=await res.json();renderInvestidores(investidoresCache);}catch{document.getElementById('lista-investidores').innerHTML='<div class="empty-state">Erro ao carregar.</div>';}}
-function renderInvestidores(lista){const div=document.getElementById('lista-investidores');if(!lista.length){div.innerHTML='<div class="empty-state">Nenhum investidor. Clique em "+ Novo" para adicionar.</div>';return;}div.innerHTML=lista.map(inv=>`<div class="inv-card"><div class="inv-card-info"><h3>👤 ${inv.nome}</h3><p>${inv.email||'—'} | ${inv.telefone||'—'}</p><p style="margin-top:4px">${inv.cpf_cnpj||''} ${inv.ativo?'<span class="badge badge-green">Ativo</span>':'<span class="badge badge-red">Inativo</span>'}</p></div><div class="inv-card-stats"><div class="inv-stat"><div class="inv-stat-val">${inv.percentual_comissao}%</div><div class="inv-stat-label">Comissão</div></div><div class="inv-stat"><div class="inv-stat-val">${inv.total_veiculos}</div><div class="inv-stat-label">Veículos</div></div></div><div style="display:flex;gap:8px;flex-direction:column">${podeGerenciarInvestidores()?`<button class="action-btn" onclick="editarInvestidor(${inv.id})">Editar</button><button class="action-btn" onclick="abrirLancamento(${inv.id})">+ Lançamento</button>`:''}<button class="action-btn danger" onclick="desativarInvestidor(${inv.id})">${inv.ativo?'Desativar':'Ativar'}</button></div></div>`).join('');}
-async function salvarInvestidor(){const idEdicao=document.getElementById('modal-investidor').dataset.editId;const body={nome:document.getElementById('inv-nome').value,cpf_cnpj:document.getElementById('inv-cpf').value,email:document.getElementById('inv-email').value,telefone:document.getElementById('inv-telefone').value,percentual_comissao:parseFloat(document.getElementById('inv-comissao').value)||0};if(!body.nome||!body.percentual_comissao){showToast('Preencha nome e % de comissão.','var(--warning)');return;}try{const url=idEdicao?API+'/investidores/'+idEdicao:API+'/investidores/';const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-investidor');showToast(idEdicao?'✓ Atualizado!':'✓ Investidor cadastrado!');carregarInvestidores();}catch{showToast('Erro.','var(--danger)');}}
-function editarInvestidor(id){const inv=investidoresCache.find(x=>x.id===id);if(!inv)return;document.getElementById('modal-inv-title').textContent='Editar Investidor';document.getElementById('modal-investidor').dataset.editId=id;document.getElementById('inv-nome').value=inv.nome||'';document.getElementById('inv-cpf').value=inv.cpf_cnpj||'';document.getElementById('inv-email').value=inv.email||'';document.getElementById('inv-telefone').value=inv.telefone||'';document.getElementById('inv-comissao').value=inv.percentual_comissao||'';document.getElementById('modal-investidor').classList.add('open');}
-async function desativarInvestidor(id){try{const res=await fetch(API+'/investidores/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('✓ Status alterado!');carregarInvestidores();}catch{showToast('Erro.','var(--danger)');}}
-
-/* ===== LANÇAMENTOS COM AUTO-PREENCHIMENTO ===== */
-async function abrirLancamento(investidorId, lancamentoParaEditar){
-  lancamentoEditandoId = lancamentoParaEditar ? lancamentoParaEditar.id : null;
-  try{
-    const rv=await fetch(API+'/veiculos/',auth());
-    const veiculos=await rv.json();
-    document.getElementById('modal-lanc-title').textContent = lancamentoEditandoId ? 'Editar Lançamento' : 'Registrar Lançamento Mensal';
-    document.getElementById('lanc-investidor').innerHTML=investidoresCache.map(i=>`<option value="${i.id}" ${i.id===investidorId?'selected':''}>${i.nome} (${i.percentual_comissao}%)</option>`).join('');
-    document.getElementById('lanc-veiculo').innerHTML='<option value="">Selecione o veículo...</option>'+veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');
-    if(lancamentoParaEditar){
-      document.getElementById('lanc-veiculo').value = lancamentoParaEditar.veiculo_id;
-      document.getElementById('lanc-mes').value = lancamentoParaEditar.mes_referencia;
-      document.getElementById('lanc-receita').value = lancamentoParaEditar.receita_total;
-      document.getElementById('lanc-aportes').value = lancamentoParaEditar.aportes;
-      document.getElementById('lanc-despesas').value = lancamentoParaEditar.despesas_total;
-      document.getElementById('lanc-parcelas').value = lancamentoParaEditar.parcelas_financiamento;
-      document.getElementById('lanc-obs').value = lancamentoParaEditar.observacao || '';
-    } else {
-      document.getElementById('lanc-mes').value=new Date().toISOString().slice(0,7);
-      ['lanc-receita','lanc-despesas','lanc-obs'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('lanc-aportes').value='0';
-      document.getElementById('lanc-parcelas').value='0';
-    }
-    document.getElementById('lanc-preview').style.display='none';
-    document.getElementById('auto-box').style.display='none';
-    atualizarPctFormula();
-    document.getElementById('modal-lancamento').classList.add('open');
-  }catch{showToast('Erro ao abrir.','var(--danger)');}
-}
-
-async function verificarAutoPreenchimento(){
-  const veiculoId = document.getElementById('lanc-veiculo').value;
-  const mes = document.getElementById('lanc-mes').value;
-  if(!veiculoId || !mes) { document.getElementById('auto-box').style.display='none'; return; }
-  try {
-    const res = await fetch(API+'/investidores/precalculo/'+veiculoId+'/'+mes, auth());
-    if(res.ok){
-      precalculoCache = await res.json();
-      if(precalculoCache.receita_total > 0 || precalculoCache.despesas_total > 0 || precalculoCache.parcelas_financiamento > 0){
-        document.getElementById('auto-box').style.display='block';
-      } else {
-        document.getElementById('auto-box').style.display='none';
-      }
-    }
-  } catch { document.getElementById('auto-box').style.display='none'; }
-}
-
-function preencherAutomatico(){
-  if(!precalculoCache) return;
-  document.getElementById('lanc-receita').value = precalculoCache.receita_total;
-  document.getElementById('lanc-despesas').value = precalculoCache.despesas_total;
-  document.getElementById('lanc-parcelas').value = precalculoCache.parcelas_financiamento;
-  calcularPreview();
-  showToast(`✓ Preenchido! ${precalculoCache.total_locacoes} locação(ões) e ${precalculoCache.total_despesas_registradas} despesa(s) encontradas.`);
-  document.getElementById('auto-box').style.display='none';
-}
-
-function atualizarPctFormula(){const id=parseInt(document.getElementById('lanc-investidor').value);const inv=investidoresCache.find(x=>x.id===id);document.getElementById('formula-pct').textContent=inv?inv.percentual_comissao:'—';calcularPreview();}
-function calcularPreview(){const receita=parseFloat(document.getElementById('lanc-receita').value)||0;const aportes=parseFloat(document.getElementById('lanc-aportes').value)||0;const despesas=parseFloat(document.getElementById('lanc-despesas').value)||0;const parcelas=parseFloat(document.getElementById('lanc-parcelas').value)||0;const lucro=receita+aportes-despesas-parcelas;const id=parseInt(document.getElementById('lanc-investidor').value);const inv=investidoresCache.find(x=>x.id===id);const pct=inv?inv.percentual_comissao:0;const comissao=lucro>0?lucro*(pct/100):0;document.getElementById('lanc-preview').style.display='block';document.getElementById('prev-lucro').textContent='R$ '+lucro.toFixed(2);document.getElementById('prev-lucro').style.color=lucro>=0?'var(--green)':'var(--danger)';document.getElementById('prev-comissao').textContent='R$ '+comissao.toFixed(2);}
-
-async function salvarLancamento(){
-  const body={investidor_id:parseInt(document.getElementById('lanc-investidor').value),veiculo_id:parseInt(document.getElementById('lanc-veiculo').value),mes_referencia:document.getElementById('lanc-mes').value,receita_total:parseFloat(document.getElementById('lanc-receita').value)||0,aportes:parseFloat(document.getElementById('lanc-aportes').value)||0,despesas_total:parseFloat(document.getElementById('lanc-despesas').value)||0,parcelas_financiamento:parseFloat(document.getElementById('lanc-parcelas').value)||0,observacao:document.getElementById('lanc-obs').value};
-  if(!body.investidor_id||!body.veiculo_id||!body.mes_referencia){showToast('Preencha investidor, veículo e mês.','var(--warning)');return;}
-  try{
-    let res;
-    if(lancamentoEditandoId){
-      res=await fetch(API+'/investidores/lancamentos/'+lancamentoEditandoId,{method:'PUT',body:JSON.stringify(body),...auth()});
-    } else {
-      res=await fetch(API+'/investidores/lancamentos/novo',{method:'POST',body:JSON.stringify(body),...auth()});
-    }
-    if(!res.ok)throw new Error();
-    const data=await res.json();
-    fecharModal('modal-lancamento');
-    showToast(`✓ ${lancamentoEditandoId?'Lançamento atualizado':'Lançamento registrado'}! Comissão: R$ ${data.valor_comissao?.toFixed(2)}`);
-    lancamentoEditandoId = null;
-    if(paginaAtual==='extrato') { document.querySelectorAll('#tabs-investidores-extrato .tab-btn.active')[0]?.click(); }
-  }catch{showToast('Erro ao registrar.','var(--danger)');}
-}
-
-/* ===== EXTRATO ===== */
-async function carregarTabsExtrato(){try{const res=await fetch(API+'/investidores/',auth());const lista=await res.json();investidoresCache=lista;const tabs=document.getElementById('tabs-investidores-extrato');tabs.innerHTML='<span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione:</span>'+lista.map(inv=>`<button class="tab-btn" onclick="verExtrato(${inv.id},this)">${inv.nome}</button>`).join('');document.getElementById('area-extrato-conteudo').innerHTML='<div class="empty-state">Selecione um investidor acima.</div>';}catch{}}
-
-async function verExtrato(investidorId,el){
-  document.querySelectorAll('#tabs-investidores-extrato .tab-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  const area=document.getElementById('area-extrato-conteudo');
-  area.innerHTML='<div class="empty-state">Carregando...</div>';
-  try{
-    const res=await fetch(API+'/investidores/'+investidorId+'/extrato',auth());
-    const data=await res.json();
-    const inv=data.investidor,resumo=data.resumo,lancs=data.lancamentos;
-    area.innerHTML=`
-      <div class="extrato-header">
-        <div><h2>👤 ${inv.nome}</h2><p>Comissão: ${inv.percentual_comissao}% sobre o lucro líquido</p></div>
-        <div class="inv-card-stats">
-          <div class="inv-stat"><div class="inv-stat-val">${resumo.total_lancamentos}</div><div class="inv-stat-label">Lançamentos</div></div>
-          <div class="inv-stat"><div class="inv-stat-val" style="color:var(--green)">R$ ${resumo.total_lucro_gerado?.toFixed(2)}</div><div class="inv-stat-label">Lucro Total</div></div>
-          <div class="inv-stat"><div class="inv-stat-val" style="color:var(--warning)">R$ ${resumo.total_comissao_paga?.toFixed(2)}</div><div class="inv-stat-label">Total Comissões</div></div>
-        </div>
-      </div>
-      ${lancs.length===0
-        ? '<div class="empty-state">Nenhum lançamento ainda.</div>'
-        : `<div class="table-card"><table>
-            <thead><tr><th>Mês</th><th>Veículo</th><th>Receita</th><th>Aportes</th><th>Despesas</th><th>Parcelas</th><th>Lucro Líquido</th><th>Comissão (${inv.percentual_comissao}%)</th><th>Obs</th><th></th></tr></thead>
-            <tbody>${lancs.map(l=>`<tr>
-              <td><strong>${l.mes_referencia}</strong></td>
-              <td>#${l.veiculo_id}</td>
-              <td style="color:var(--green)">R$ ${l.receita_total?.toFixed(2)}</td>
-              <td style="color:var(--info)">R$ ${l.aportes?.toFixed(2)}</td>
-              <td style="color:var(--danger)">R$ ${l.despesas_total?.toFixed(2)}</td>
-              <td style="color:var(--warning)">R$ ${l.parcelas_financiamento?.toFixed(2)}</td>
-              <td style="color:${l.lucro_liquido>=0?'var(--green)':'var(--danger)'};font-weight:700">R$ ${l.lucro_liquido?.toFixed(2)}</td>
-              <td style="color:var(--warning);font-weight:700">R$ ${l.valor_comissao?.toFixed(2)}</td>
-              <td style="color:var(--gray)">${l.observacao||'—'}</td>
-              <td>
-                ${podeGerenciarInvestidores()?`<button class="action-btn" onclick="abrirLancamento(${inv.id}, ${JSON.stringify(l).replace(/"/g,'&quot;')})">✏️ Editar</button>`:''}
-                ${podeExcluir()?`<button class="action-btn danger" onclick="excluirLancamento(${l.id}, ${inv.id}, this.closest('tr').parentElement.parentElement)">🗑️</button>`:''}
-              </td>
-            </tr>`).join('')}</tbody>
-          </table></div>`
-      }`;
-  }catch{area.innerHTML='<div class="empty-state">Erro ao carregar extrato.</div>';}
-}
-
-async function excluirLancamento(id, investidorId, tbody){
-  if(!confirm('Excluir este lançamento?'))return;
-  try{
-    const res=await fetch(API+'/investidores/lancamentos/'+id,{method:'DELETE',...auth()});
-    if(!res.ok)throw new Error();
-    showToast('✓ Lançamento excluído!');
-    const tabAtiva = document.querySelector('#tabs-investidores-extrato .tab-btn.active');
-    if(tabAtiva) tabAtiva.click();
-  }catch{showToast('Erro ao excluir.','var(--danger)');}
-}
-
-/* ===== HELPERS ===== */
-function badgePerfil(p){const m={admin:'badge-purple',atendente:'badge-blue',financeiro:'badge-yellow'};const l={admin:'Admin',atendente:'Atendente',financeiro:'Financeiro'};return`<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;}
-function formatCategoria(c){const m={manutencao:'🔧 Manutenção',combustivel:'🛢️ Combustível',lavagem:'🧼 Lavagem',salarios:'👨‍💼 Salários',contas:'💡 Contas',aluguel:'🏢 Aluguel',seguro:'🛡️ Seguro',ipva_licenciamento:'📋 IPVA/Licenc.',pecas:'📦 Peças',outros:'📌 Outros'};return m[c]||c;}
-function badgeStatus(s){const m={'Disponível':'green','Ativa':'green','Alugado':'yellow','Pendente':'yellow','Encerrada':'gray','Paga':'blue'};return`<span class="badge badge-${m[s]||'gray'}">${s}</span>`;}
-function badgePagamento(s){const m={pago:'green',parcial:'yellow',pendente:'red'};const l={pago:'Pago',parcial:'Parcial',pendente:'Pendente'};return`<span class="badge badge-${m[s]||'gray'}">${l[s]||s}</span>`;}
-function formatForma(f){const m={pix:'Pix',dinheiro:'Dinheiro',cartao_debito:'Débito',cartao_credito:'Crédito',transferencia:'Transferência'};return m[f]||f||'—';}
-function formatData(d){if(!d)return'—';return d.split('T')[0].split('-').reverse().join('/');}
-</script>
-</body>
-</html>
+<!-- PARTE 1 FIM -->
