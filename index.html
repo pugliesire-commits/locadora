@@ -83,7 +83,7 @@
   .select-input { width: 100%; background: var(--darker); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 14px; outline: none; }
   .select-input:focus { border-color: var(--green); }
   .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; border: 1px solid var(--green); color: var(--green); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999; display: none; }
-  .tabs-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tabs-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
   .tab-btn { padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--gray); transition: all 0.15s; }
   .tab-btn.active { background: var(--green); color: var(--dark); border-color: var(--green); }
   .resumo-card { background: var(--darker); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
@@ -126,6 +126,7 @@
         <div class="nav-item" onclick="mostrarPagina('locacoes',this)">&#9679; Locações</div>
         <div class="nav-item" onclick="mostrarPagina('pagamentos',this)">&#9632; Pagamentos</div>
         <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
+        <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
       </nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">AD</div>
@@ -153,15 +154,15 @@
           </div>
           <div class="stats-grid" style="margin-top:-14px">
             <div class="stat-card"><div class="stat-label">Receita total</div><div class="stat-value accent" id="stat-receita">—</div></div>
-            <div class="stat-card"><div class="stat-label">Pagamentos pendentes</div><div class="stat-value" style="color:var(--warning)" id="stat-pendentes">—</div></div>
-            <div class="stat-card"><div class="stat-label">Valor em aberto</div><div class="stat-value" style="color:var(--danger)" id="stat-aberto">—</div></div>
+            <div class="stat-card"><div class="stat-label">Despesas do mês</div><div class="stat-value" style="color:var(--danger)" id="stat-despesas-mes">—</div></div>
+            <div class="stat-card"><div class="stat-label">Valor em aberto</div><div class="stat-value" style="color:var(--warning)" id="stat-aberto">—</div></div>
             <div class="stat-card"><div class="stat-label">Parcelas do mês</div><div class="stat-value" style="color:var(--info)" id="stat-parcelas-mes">—</div></div>
           </div>
           <div class="stats-grid" style="margin-top:-14px">
             <div class="stat-card"><div class="stat-label">Financiamentos ativos</div><div class="stat-value" style="color:var(--warning)" id="stat-fin-ativos">—</div></div>
             <div class="stat-card"><div class="stat-label">Veículos quitados</div><div class="stat-value accent" id="stat-fin-quitados">—</div></div>
-            <div class="stat-card"><div class="stat-label">Cobranças extras</div><div class="stat-value" id="stat-extras">—</div></div>
-            <div class="stat-card"><div class="stat-label">Total financiamentos</div><div class="stat-value" id="stat-fin-total">—</div></div>
+            <div class="stat-card"><div class="stat-label">Total despesas geral</div><div class="stat-value" style="color:var(--danger)" id="stat-despesas-geral">—</div></div>
+            <div class="stat-card"><div class="stat-label">Pagamentos pendentes</div><div class="stat-value" style="color:var(--warning)" id="stat-pendentes">—</div></div>
           </div>
           <div class="section-title">Locações recentes</div>
           <div class="table-card">
@@ -237,9 +238,7 @@
               </table>
             </div>
           </div>
-          <div id="area-alertas" style="display:none">
-            <div id="lista-alertas"></div>
-          </div>
+          <div id="area-alertas" style="display:none"><div id="lista-alertas"></div></div>
           <div id="area-relatorio" style="display:none">
             <div class="table-card">
               <table>
@@ -250,10 +249,43 @@
           </div>
         </div>
 
+        <div id="page-despesas" style="display:none">
+          <div class="tabs-bar">
+            <button class="tab-btn active" onclick="mostrarDespesas('lista',this)">Todas</button>
+            <button class="tab-btn" onclick="mostrarDespesas('categoria',this)">📊 Por Categoria</button>
+            <button class="tab-btn" onclick="mostrarDespesas('veiculo',this)">🚗 Por Veículo</button>
+          </div>
+          <div id="area-despesas-lista">
+            <div class="table-card">
+              <table>
+                <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Placa</th><th>Valor</th><th></th></tr></thead>
+                <tbody id="tabela-despesas"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="area-despesas-categoria" style="display:none">
+            <div class="table-card">
+              <table>
+                <thead><tr><th>Categoria</th><th>Quantidade</th><th>Total</th></tr></thead>
+                <tbody id="tabela-despesas-categoria"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="area-despesas-veiculo" style="display:none">
+            <div class="table-card">
+              <table>
+                <thead><tr><th>Placa</th><th>Modelo</th><th>Despesas Operacionais</th><th>Parcelas Financiamento</th><th>Custo Total</th></tr></thead>
+                <tbody id="tabela-despesas-veiculo"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
 </div>
+
 <!-- MODAL VEÍCULO -->
 <div class="modal-overlay" id="modal-veiculo">
   <div class="modal">
@@ -389,6 +421,37 @@
   </div>
 </div>
 
+<!-- MODAL DESPESA -->
+<div class="modal-overlay" id="modal-despesa">
+  <div class="modal">
+    <div class="modal-title">Nova Despesa</div>
+    <div class="modal-grid">
+      <div class="field"><label>Categoria</label>
+        <select id="d-categoria" class="select-input">
+          <option value="manutencao">🔧 Manutenção</option>
+          <option value="combustivel">🛢️ Combustível</option>
+          <option value="lavagem">🧼 Lavagem</option>
+          <option value="salarios">👨‍💼 Salários</option>
+          <option value="contas">💡 Contas</option>
+          <option value="aluguel">🏢 Aluguel</option>
+          <option value="seguro">🛡️ Seguro</option>
+          <option value="ipva_licenciamento">📋 IPVA / Licenciamento</option>
+          <option value="pecas">📦 Peças</option>
+          <option value="outros">📌 Outros</option>
+        </select>
+      </div>
+      <div class="field"><label>Valor (R$)</label><input id="d-valor" type="number" placeholder="0.00" step="0.01"/></div>
+      <div class="field full"><label>Descrição</label><input id="d-descricao" placeholder="Descreva a despesa..."/></div>
+      <div class="field"><label>Data</label><input id="d-data" type="date"/></div>
+      <div class="field"><label>Veículo (opcional)</label><select id="d-veiculo" class="select-input"><option value="">Nenhum (despesa geral)</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-despesa')">Cancelar</button>
+      <button class="btn-save" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -399,6 +462,7 @@ let veiculosCache = [];
 let clientesCache = [];
 let pagamentosCache = [];
 let financiamentosCache = [];
+let despesasCache = [];
 let filtroVeiculo = 'todos';
 let filtroPagamento = 'todos';
 let filtroFinanciamento = 'todos';
@@ -443,7 +507,7 @@ function mostrarPagina(nome, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   paginaAtual = nome;
-  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos' };
+  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais' };
   document.getElementById('topbar-title').textContent = titulos[nome];
   document.getElementById('btn-novo').style.display = nome === 'dashboard' ? 'none' : 'flex';
   if (nome === 'veiculos') carregarVeiculos();
@@ -451,6 +515,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'pagamentos') carregarPagamentos();
   else if (nome === 'financiamentos') carregarFinanciamentos();
+  else if (nome === 'despesas') carregarDespesas();
   else carregarDashboard();
 }
 
@@ -469,24 +534,27 @@ function abrirModal() {
   else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
   else if (paginaAtual === 'pagamentos') showToast('Selecione uma locação para registrar pagamento.');
   else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
+  else if (paginaAtual === 'despesas') { carregarSelectsDespesa(); document.getElementById('modal-despesa').classList.add('open'); }
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
 async function carregarDashboard() {
   try {
-    const [rv, rc, rl, rp, rf] = await Promise.all([
+    const [rv, rc, rl, rp, rf, rd] = await Promise.all([
       fetch(API + '/veiculos/', auth()),
       fetch(API + '/clientes/', auth()),
       fetch(API + '/locacoes/', auth()),
       fetch(API + '/pagamentos/', auth()),
-      fetch(API + '/financiamentos/dashboard', auth())
+      fetch(API + '/financiamentos/dashboard', auth()),
+      fetch(API + '/despesas/dashboard', auth())
     ]);
     const veiculos = await rv.json();
     const clientes = await rc.json();
     const locacoes = await rl.json();
     const pagamentos = await rp.json();
     const finDash = rf.ok ? await rf.json() : {};
+    const despDash = rd.ok ? await rd.json() : {};
 
     document.getElementById('stat-veiculos').textContent = veiculos.length;
     document.getElementById('stat-disponiveis').textContent = veiculos.filter(v => v.status === 'Disponível').length;
@@ -499,12 +567,13 @@ async function carregarDashboard() {
     document.getElementById('stat-receita').textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits:2});
     document.getElementById('stat-pendentes').textContent = pendentes;
     document.getElementById('stat-aberto').textContent = 'R$ ' + aberto.toLocaleString('pt-BR', {minimumFractionDigits:2});
-    document.getElementById('stat-extras').textContent = pagamentos.length;
 
     document.getElementById('stat-parcelas-mes').textContent = finDash.total_parcelas_mes ? 'R$ ' + finDash.total_parcelas_mes.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
     document.getElementById('stat-fin-ativos').textContent = finDash.financiamentos_ativos ?? '0';
     document.getElementById('stat-fin-quitados').textContent = finDash.financiamentos_quitados ?? '0';
-    document.getElementById('stat-fin-total').textContent = finDash.total_financiamentos ?? '0';
+
+    document.getElementById('stat-despesas-mes').textContent = despDash.total_despesas_mes ? 'R$ ' + despDash.total_despesas_mes.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
+    document.getElementById('stat-despesas-geral').textContent = despDash.total_despesas_geral ? 'R$ ' + despDash.total_despesas_geral.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
 
     const tbody = document.getElementById('dash-locacoes');
     const recentes = locacoes.slice(-5).reverse();
@@ -925,6 +994,121 @@ async function excluirFinanciamento(id) {
     showToast('Financiamento excluído.');
     carregarFinanciamentos();
   } catch { showToast('Erro ao excluir.','var(--danger)'); }
+}
+
+async function carregarDespesas() {
+  try {
+    const res = await fetch(API + '/despesas/', auth());
+    despesasCache = await res.json();
+    renderDespesas(despesasCache);
+  } catch {}
+}
+
+function renderDespesas(lista) {
+  document.getElementById('area-despesas-lista').style.display = 'block';
+  document.getElementById('area-despesas-categoria').style.display = 'none';
+  document.getElementById('area-despesas-veiculo').style.display = 'none';
+  const tbody = document.getElementById('tabela-despesas');
+  if (!lista.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma despesa registrada.</td></tr>'; return; }
+  tbody.innerHTML = lista.map(d => `<tr>
+    <td>${formatData(d.data)}</td>
+    <td>${formatCategoria(d.categoria)}</td>
+    <td>${d.descricao}</td>
+    <td>${d.placa||'<span style="color:var(--gray)">Geral</span>'}</td>
+    <td style="color:var(--danger)">R$ ${d.valor?.toFixed(2)}</td>
+    <td><button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button></td>
+  </tr>`).join('');
+}
+
+async function mostrarDespesas(tipo, el) {
+  document.querySelectorAll('#page-despesas .tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('area-despesas-lista').style.display = 'none';
+  document.getElementById('area-despesas-categoria').style.display = 'none';
+  document.getElementById('area-despesas-veiculo').style.display = 'none';
+
+  if (tipo === 'lista') {
+    document.getElementById('area-despesas-lista').style.display = 'block';
+    renderDespesas(despesasCache);
+    return;
+  }
+  if (tipo === 'categoria') {
+    document.getElementById('area-despesas-categoria').style.display = 'block';
+    try {
+      const res = await fetch(API + '/despesas/por-categoria', auth());
+      const data = await res.json();
+      const tbody = document.getElementById('tabela-despesas-categoria');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Nenhuma despesa.</td></tr>'; return; }
+      tbody.innerHTML = data.map(d => `<tr>
+        <td>${formatCategoria(d.categoria)}</td>
+        <td>${d.quantidade}</td>
+        <td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td>
+      </tr>`).join('');
+    } catch {}
+  }
+  if (tipo === 'veiculo') {
+    document.getElementById('area-despesas-veiculo').style.display = 'block';
+    try {
+      const res = await fetch(API + '/despesas/por-veiculo', auth());
+      const data = await res.json();
+      const tbody = document.getElementById('tabela-despesas-veiculo');
+      if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum dado.</td></tr>'; return; }
+      tbody.innerHTML = data.map(d => `<tr>
+        <td><strong>${d.placa}</strong></td>
+        <td>${d.marca} ${d.modelo}</td>
+        <td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td>
+        <td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td>
+        <td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td>
+      </tr>`).join('');
+    } catch {}
+  }
+}
+
+async function carregarSelectsDespesa() {
+  const res = await fetch(API+'/veiculos/',auth());
+  const veiculos = await res.json();
+  document.getElementById('d-veiculo').innerHTML = '<option value="">Nenhum (despesa geral)</option>' +
+    veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');
+  document.getElementById('d-data').value = new Date().toISOString().split('T')[0];
+}
+
+async function salvarDespesa() {
+  const veiculoId = document.getElementById('d-veiculo').value;
+  const body = {
+    categoria: document.getElementById('d-categoria').value,
+    descricao: document.getElementById('d-descricao').value,
+    valor: parseFloat(document.getElementById('d-valor').value)||0,
+    data: document.getElementById('d-data').value,
+    veiculo_id: veiculoId ? parseInt(veiculoId) : null
+  };
+  if (!body.descricao||!body.valor||!body.data) { showToast('Preencha todos os campos.','var(--warning)'); return; }
+  try {
+    const res = await fetch(API+'/despesas/', {method:'POST',body:JSON.stringify(body),...auth()});
+    if (!res.ok) throw new Error();
+    fecharModal('modal-despesa');
+    showToast('✓ Despesa registrada!');
+    carregarDespesas();
+    carregarDashboard();
+  } catch { showToast('Erro ao salvar.','var(--danger)'); }
+}
+
+async function excluirDespesa(id) {
+  if (!confirm('Excluir esta despesa?')) return;
+  try {
+    await fetch(API+'/despesas/'+id, {method:'DELETE',...auth()});
+    showToast('Despesa excluída.');
+    carregarDespesas();
+    carregarDashboard();
+  } catch { showToast('Erro ao excluir.','var(--danger)'); }
+}
+
+function formatCategoria(c) {
+  const m = {
+    manutencao:'🔧 Manutenção', combustivel:'🛢️ Combustível', lavagem:'🧼 Lavagem',
+    salarios:'👨‍💼 Salários', contas:'💡 Contas', aluguel:'🏢 Aluguel',
+    seguro:'🛡️ Seguro', ipva_licenciamento:'📋 IPVA/Licenc.', pecas:'📦 Peças', outros:'📌 Outros'
+  };
+  return m[c]||c;
 }
 
 function badgeStatus(s) {
