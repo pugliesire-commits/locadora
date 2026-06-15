@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
+from datetime import date
 from modelos.database import get_db
 from modelos.parcela import Parcela
 from modelos.locacao import Locacao
@@ -48,17 +47,35 @@ def pagar_parcela(parcela_id: int, dados: PagamentoParcela, db: Session = Depend
         raise HTTPException(status_code=404, detail="Parcela não encontrada")
     if parcela.status == 'pago':
         raise HTTPException(status_code=400, detail="Parcela já está paga")
-
     parcela.valor_pago = (parcela.valor_pago or 0) + dados.valor_pago
     parcela.forma_pagamento = dados.forma_pagamento
     parcela.observacao = dados.observacao
     parcela.data_pagamento = date.today()
-
     if parcela.valor_pago >= parcela.valor:
         parcela.status = 'pago'
     else:
         parcela.status = 'parcial'
+    db.commit()
+    db.refresh(parcela)
+    return parcela
 
+@router.put("/{parcela_id}/editar")
+def editar_parcela(parcela_id: int, dados: PagamentoParcela, db: Session = Depends(get_db)):
+    parcela = db.query(Parcela).filter(Parcela.id == parcela_id).first()
+    if not parcela:
+        raise HTTPException(status_code=404, detail="Parcela não encontrada")
+    parcela.valor_pago = dados.valor_pago
+    parcela.forma_pagamento = dados.forma_pagamento
+    parcela.observacao = dados.observacao
+    if dados.valor_pago <= 0:
+        parcela.status = 'pendente'
+        parcela.data_pagamento = None
+    elif dados.valor_pago >= parcela.valor:
+        parcela.status = 'pago'
+        parcela.data_pagamento = date.today()
+    else:
+        parcela.status = 'parcial'
+        parcela.data_pagamento = date.today()
     db.commit()
     db.refresh(parcela)
     return parcela
