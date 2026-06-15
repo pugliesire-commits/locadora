@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from modelos.database import Base
 
@@ -15,8 +15,11 @@ class Locacao(Base):
     valor_total    = Column(Float)
     status         = Column(String, default="Ativa")
     observacoes    = Column(String)
+    periodo        = Column(String(10), default="diario")   # 👈 NOVO
+    valor_periodo  = Column(Float, default=0.0)             # 👈 NOVO
 
     cliente          = relationship("Cliente")
-    veiculo          = relationship("Veiculo")
+    veiculo          = relationship("Veiculo", back_populates="locacoes")
     pagamentos       = relationship("Pagamento", back_populates="locacao")
     cobrancas_extras = relationship("CobrancaExtra", back_populates="locacao")
+    parcelas         = relationship("Parcela", back_populates="locacao")  # 👈 NOVO
