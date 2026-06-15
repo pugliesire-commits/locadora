@@ -975,7 +975,7 @@ async function verParcelasLocacao(locacaoId, el){
             </div>
             <div class="parcela-actions">
               ${p.status!=='pago'&&podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirReceberParcela(${p.id},${p.valor},${p.valor_pago||0},'${formatData(p.data_vencimento)}')">💰 Receber</button>`:''}
-              ${p.status==='pago'?`<span style="color:var(--green);font-size:11px">✓ ${formatData(p.data_pagamento)}</span> ${podeLancarFinanceiro()?`<button class="action-btn" onclick="editarParcela(${p.id},${p.valor},${p.valor_pago||0},'${formatData(p.data_vencimento)}')">✏️ Editar</button>`:'`}`:''}
+              ${p.status==='pago'?('<span style="color:var(--green);font-size:11px">✓ '+formatData(p.data_pagamento)+'</span> '+(podeLancarFinanceiro()?'<button class="action-btn" onclick="editarParcela('+p.id+','+p.valor+','+(p.valor_pago||0)+',' + "'"+formatData(p.data_vencimento)+"'" + ')">✏️ Editar</button>':'')):''}
             </div>
           </div>`;
         }).join('')}
