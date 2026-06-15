@@ -31,10 +31,11 @@
   .sidebar-logo-text { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
   .sidebar-logo-text span { color: var(--green); }
   .sidebar-logo-sub { color: var(--gray); font-size: 11px; margin-top: 2px; }
-  nav { flex: 1; padding: 16px 0; }
+  nav { flex: 1; padding: 16px 0; overflow-y: auto; }
   .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: var(--gray); font-size: 14px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
   .nav-item:hover { color: var(--white); background: #1b1b1b; }
   .nav-item.active { color: var(--green); border-left-color: var(--green); background: #1b1b1b; }
+  .nav-section { padding: 8px 20px 4px; color: var(--gray); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
   .sidebar-user { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--dark); flex-shrink: 0; }
   .user-name { color: var(--white); font-size: 13px; font-weight: 500; }
@@ -44,6 +45,8 @@
   .main { margin-left: 220px; flex: 1; min-height: 100vh; }
   .topbar { background: var(--darker); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
   .topbar-title { font-size: 16px; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .perfil-badge { background: #9eff1f22; color: var(--green); border: 1px solid #9eff1f44; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
   .btn-new { background: var(--green); color: var(--dark); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .btn-new:hover { opacity: 0.9; }
   .content { padding: 28px; }
@@ -67,9 +70,11 @@
   .badge-red { background: #ff444422; color: #ff6666; }
   .badge-gray { background: #88888822; color: var(--gray); }
   .badge-blue { background: #378ADD22; color: var(--info); }
+  .badge-purple { background: #9b59b622; color: #9b59b6; }
   .action-btn { background: none; border: 1px solid var(--border); color: var(--gray); padding: 4px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; transition: all 0.15s; margin-right: 4px; }
   .action-btn:hover { border-color: var(--green); color: var(--green); }
   .action-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .action-btn.warning:hover { border-color: var(--warning); color: var(--warning); }
   .empty-state { padding: 48px; text-align: center; color: var(--gray); font-size: 14px; }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
@@ -97,6 +102,7 @@
   .alert-card { background: #ffcc0011; border: 1px solid #ffcc0033; border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
   .alert-card .alert-info { font-size: 13px; color: var(--light); }
   .alert-card .alert-dias { font-size: 12px; color: var(--warning); font-weight: 600; }
+  .acesso-negado { background: #ff444411; border: 1px solid #ff444433; border-radius: 10px; padding: 32px; text-align: center; color: var(--danger); margin: 20px 0; }
 </style>
 </head>
 <body>
@@ -119,20 +125,24 @@
         <div class="sidebar-logo-text">LOCA<span>+</span>CAR</div>
         <div class="sidebar-logo-sub">Painel de Gestão</div>
       </div>
-      <nav>
+      <nav id="nav-menu">
         <div class="nav-item active" onclick="mostrarPagina('dashboard',this)">&#9632; Dashboard</div>
+        <div class="nav-section">OPERACIONAL</div>
         <div class="nav-item" onclick="mostrarPagina('veiculos',this)">&#9654; Veículos</div>
         <div class="nav-item" onclick="mostrarPagina('clientes',this)">&#9650; Clientes</div>
         <div class="nav-item" onclick="mostrarPagina('locacoes',this)">&#9679; Locações</div>
+        <div class="nav-section">FINANCEIRO</div>
         <div class="nav-item" onclick="mostrarPagina('pagamentos',this)">&#9632; Pagamentos</div>
         <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
         <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
+        <div class="nav-section nav-admin" style="display:none">ADMINISTRAÇÃO</div>
+        <div class="nav-item nav-admin" style="display:none" onclick="mostrarPagina('usuarios',this)">&#9632; Usuários</div>
       </nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">AD</div>
         <div>
           <div class="user-name" id="user-name">Admin</div>
-          <div class="user-role">Administrador</div>
+          <div class="user-role" id="user-role">Administrador</div>
         </div>
         <button class="btn-logout" onclick="fazerLogout()" title="Sair">&#10005;</button>
       </div>
@@ -141,7 +151,10 @@
     <main class="main">
       <div class="topbar">
         <span class="topbar-title" id="topbar-title">Dashboard</span>
-        <button class="btn-new" id="btn-novo" style="display:none" onclick="abrirModal()">+ Novo</button>
+        <div class="topbar-right">
+          <span class="perfil-badge" id="perfil-badge">Admin</span>
+          <button class="btn-new" id="btn-novo" style="display:none" onclick="abrirModal()">+ Novo</button>
+        </div>
       </div>
       <div class="content">
 
@@ -278,6 +291,15 @@
                 <tbody id="tabela-despesas-veiculo"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div id="page-usuarios" style="display:none">
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
+              <tbody id="tabela-usuarios"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
+            </table>
           </div>
         </div>
 
@@ -452,11 +474,35 @@
   </div>
 </div>
 
+<!-- MODAL USUÁRIO -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-title">Novo Usuário</div>
+    <div class="modal-grid">
+      <div class="field full"><label>Nome completo</label><input id="u-nome" placeholder="Nome do usuário"/></div>
+      <div class="field full"><label>E-mail</label><input id="u-email" type="email" placeholder="email@empresa.com"/></div>
+      <div class="field"><label>Senha</label><input id="u-senha" type="password" placeholder="Senha de acesso"/></div>
+      <div class="field"><label>Perfil de acesso</label>
+        <select id="u-perfil" class="select-input">
+          <option value="atendente">Atendente</option>
+          <option value="financeiro">Financeiro</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn-save" onclick="salvarUsuario()">Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const API = '';
 let TOKEN = '';
+let PERFIL = '';
 let paginaAtual = 'dashboard';
 let veiculosCache = [];
 let clientesCache = [];
@@ -467,6 +513,14 @@ let filtroVeiculo = 'todos';
 let filtroPagamento = 'todos';
 let filtroFinanciamento = 'todos';
 let locacaoSelecionada = null;
+
+const PERFIL_LABELS = { admin: 'Administrador', atendente: 'Atendente', financeiro: 'Financeiro' };
+
+function podeEditar() { return PERFIL === 'admin'; }
+function podeExcluir() { return PERFIL === 'admin'; }
+function podeLancarFinanceiro() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
+function podeLancarOperacional() { return PERFIL === 'admin' || PERFIL === 'atendente'; }
+function isAdmin() { return PERFIL === 'admin'; }
 
 async function fazerLogin() {
   const email = document.getElementById('login-email').value;
@@ -484,8 +538,14 @@ async function fazerLogin() {
     const me = await fetch(API + '/auth/eu', { headers: { Authorization: 'Bearer ' + TOKEN } });
     if (me.ok) {
       const user = await me.json();
+      PERFIL = user.perfil || 'atendente';
       document.getElementById('user-name').textContent = user.nome || email.split('@')[0];
       document.getElementById('user-avatar').textContent = (user.nome || 'AD').substring(0,2).toUpperCase();
+      document.getElementById('user-role').textContent = PERFIL_LABELS[PERFIL] || PERFIL;
+      document.getElementById('perfil-badge').textContent = PERFIL_LABELS[PERFIL] || PERFIL;
+      if (PERFIL === 'admin') {
+        document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'flex');
+      }
     }
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'block';
@@ -494,9 +554,10 @@ async function fazerLogin() {
 }
 
 function fazerLogout() {
-  TOKEN = '';
+  TOKEN = ''; PERFIL = '';
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+  document.querySelectorAll('.nav-admin').forEach(el => el.style.display = 'none');
 }
 
 function auth() { return { headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' } }; }
@@ -507,15 +568,18 @@ function mostrarPagina(nome, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   paginaAtual = nome;
-  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais' };
+  const titulos = { dashboard:'Dashboard', veiculos:'Veículos', clientes:'Clientes', locacoes:'Locações', pagamentos:'Pagamentos', financiamentos:'Financiamentos', despesas:'Despesas Operacionais', usuarios:'Gestão de Usuários' };
   document.getElementById('topbar-title').textContent = titulos[nome];
-  document.getElementById('btn-novo').style.display = nome === 'dashboard' ? 'none' : 'flex';
+  const mostrarBotao = nome !== 'dashboard' && nome !== 'usuarios';
+  document.getElementById('btn-novo').style.display = mostrarBotao ? 'flex' : 'none';
+  if (nome === 'usuarios') { document.getElementById('btn-novo').style.display = 'flex'; }
   if (nome === 'veiculos') carregarVeiculos();
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'pagamentos') carregarPagamentos();
   else if (nome === 'financiamentos') carregarFinanciamentos();
   else if (nome === 'despesas') carregarDespesas();
+  else if (nome === 'usuarios') carregarUsuarios();
   else carregarDashboard();
 }
 
@@ -529,12 +593,13 @@ function showToast(msg, cor) {
 }
 
 function abrirModal() {
-  if (paginaAtual === 'veiculos') { document.getElementById('modal-veiculo-title').textContent = 'Novo Veículo'; document.getElementById('modal-veiculo').classList.add('open'); }
+  if (paginaAtual === 'veiculos') { document.getElementById('modal-veiculo-title').textContent = 'Novo Veículo'; document.getElementById('modal-veiculo').dataset.editId = ''; document.getElementById('modal-veiculo').classList.add('open'); }
   else if (paginaAtual === 'clientes') document.getElementById('modal-cliente').classList.add('open');
   else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
   else if (paginaAtual === 'pagamentos') showToast('Selecione uma locação para registrar pagamento.');
   else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
   else if (paginaAtual === 'despesas') { carregarSelectsDespesa(); document.getElementById('modal-despesa').classList.add('open'); }
+  else if (paginaAtual === 'usuarios') document.getElementById('modal-usuario').classList.add('open');
 }
 
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -555,37 +620,32 @@ async function carregarDashboard() {
     const pagamentos = await rp.json();
     const finDash = rf.ok ? await rf.json() : {};
     const despDash = rd.ok ? await rd.json() : {};
-
     document.getElementById('stat-veiculos').textContent = veiculos.length;
     document.getElementById('stat-disponiveis').textContent = veiculos.filter(v => v.status === 'Disponível').length;
     document.getElementById('stat-clientes').textContent = clientes.length;
     document.getElementById('stat-locacoes').textContent = locacoes.filter(l => l.status === 'Ativa').length;
-
     const receita = pagamentos.reduce((s, p) => s + (p.valor_pago || 0), 0);
     const pendentes = pagamentos.filter(p => p.status !== 'pago').length;
     const aberto = pagamentos.reduce((s, p) => s + (p.valor_pendente || 0), 0);
     document.getElementById('stat-receita').textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits:2});
     document.getElementById('stat-pendentes').textContent = pendentes;
     document.getElementById('stat-aberto').textContent = 'R$ ' + aberto.toLocaleString('pt-BR', {minimumFractionDigits:2});
-
     document.getElementById('stat-parcelas-mes').textContent = finDash.total_parcelas_mes ? 'R$ ' + finDash.total_parcelas_mes.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
     document.getElementById('stat-fin-ativos').textContent = finDash.financiamentos_ativos ?? '0';
     document.getElementById('stat-fin-quitados').textContent = finDash.financiamentos_quitados ?? '0';
     document.getElementById('stat-despesas-mes').textContent = despDash.total_despesas_mes ? 'R$ ' + despDash.total_despesas_mes.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
     document.getElementById('stat-despesas-geral').textContent = despDash.total_despesas_geral ? 'R$ ' + despDash.total_despesas_geral.toLocaleString('pt-BR', {minimumFractionDigits:2}) : 'R$ 0,00';
-
     const tbody = document.getElementById('dash-locacoes');
     const recentes = locacoes.slice(-5).reverse();
     if (!recentes.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma locação.</td></tr>'; return; }
     const pMap = {};
     pagamentos.forEach(p => pMap[p.locacao_id] = p);
-    tbody.innerHTML = recentes.map(l => `
-      <tr>
-        <td>${l.cliente_id}</td><td>${l.veiculo_id}</td>
-        <td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td>
-        <td>R$ ${l.valor_total}</td>
-        <td>${pMap[l.id] ? badgePagamento(pMap[l.id].status) : '<span class="badge badge-gray">Sem pagamento</span>'}</td>
-      </tr>`).join('');
+    tbody.innerHTML = recentes.map(l => `<tr>
+      <td>${l.cliente_id}</td><td>${l.veiculo_id}</td>
+      <td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td>
+      <td>R$ ${l.valor_total}</td>
+      <td>${pMap[l.id] ? badgePagamento(pMap[l.id].status) : '<span class="badge badge-gray">Sem pagamento</span>'}</td>
+    </tr>`).join('');
   } catch(e) { console.error(e); }
 }
 
@@ -606,8 +666,9 @@ function renderVeiculos(lista) {
     <td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td>
     <td>R$ ${v.valor_diaria}</td><td>${badgeStatus(v.status)}</td>
     <td>
-      <button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>
-      <button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>
+      ${podeEditar() ? `<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>` : ''}
+      ${podeExcluir() ? `<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>` : ''}
+      ${!podeEditar() && !podeExcluir() ? '<span style="color:var(--gray);font-size:11px">Somente leitura</span>' : ''}
     </td>
   </tr>`).join('');
 }
@@ -648,6 +709,7 @@ async function salvarVeiculo() {
 }
 
 function editarVeiculo(id) {
+  if (!podeEditar()) { showToast('Sem permissão para editar.', 'var(--danger)'); return; }
   const v = veiculosCache.find(x => x.id === id);
   if (!v) return;
   document.getElementById('modal-veiculo-title').textContent = 'Editar Veículo';
@@ -663,6 +725,7 @@ function editarVeiculo(id) {
 }
 
 async function excluirVeiculo(id) {
+  if (!podeExcluir()) { showToast('Sem permissão para excluir.', 'var(--danger)'); return; }
   if (!confirm('Excluir este veículo?')) return;
   try {
     await fetch(API + '/veiculos/' + id, { method: 'DELETE', ...auth() });
@@ -685,7 +748,7 @@ function renderClientes(lista) {
   tbody.innerHTML = lista.map(c => `<tr>
     <td><strong>${c.nome}</strong></td><td>${c.cpf||'—'}</td>
     <td>${c.email||'—'}</td><td>${c.telefone||'—'}</td><td>${c.cnh||'—'}</td>
-    <td><button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button></td>
+    <td>${podeExcluir() ? `<button class="action-btn danger" onclick="excluirCliente(${c.id})">Excluir</button>` : ''}</td>
   </tr>`).join('');
 }
 
@@ -713,6 +776,7 @@ async function salvarCliente() {
 }
 
 async function excluirCliente(id) {
+  if (!podeExcluir()) { showToast('Sem permissão.', 'var(--danger)'); return; }
   if (!confirm('Excluir este cliente?')) return;
   try {
     await fetch(API + '/clientes/' + id, { method: 'DELETE', ...auth() });
@@ -723,10 +787,7 @@ async function excluirCliente(id) {
 
 async function carregarLocacoes() {
   try {
-    const [rl, rp] = await Promise.all([
-      fetch(API + '/locacoes/', auth()),
-      fetch(API + '/pagamentos/', auth())
-    ]);
+    const [rl, rp] = await Promise.all([fetch(API + '/locacoes/', auth()), fetch(API + '/pagamentos/', auth())]);
     const locacoes = await rl.json();
     const pagamentos = await rp.json();
     const pMap = {};
@@ -739,15 +800,16 @@ async function carregarLocacoes() {
       <td>${l.dias} dias</td><td>R$ ${l.valor_total}</td>
       <td>${badgeStatus(l.status)}</td>
       <td>
-        <button class="action-btn" onclick="abrirPagamento(${l.id}, ${l.valor_total})">Pagar</button>
+        ${podeLancarFinanceiro() ? `<button class="action-btn" onclick="abrirPagamento(${l.id}, ${l.valor_total})">Pagar</button>` : ''}
         <button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>
-        <button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>
+        ${podeExcluir() ? `<button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>` : ''}
       </td>
     </tr>`).join('');
   } catch {}
 }
 
 async function excluirLocacao(id) {
+  if (!podeExcluir()) { showToast('Sem permissão.', 'var(--danger)'); return; }
   if (!confirm('Excluir esta locação? O veículo voltará a ficar disponível.')) return;
   try {
     await fetch(API+'/locacoes/'+id, {method:'DELETE',...auth()});
@@ -809,7 +871,7 @@ function renderPagamentos(lista) {
     <td>${formatData(p.data_pagamento)}</td>
     <td>${badgePagamento(p.status)}</td>
     <td>
-      <button class="action-btn" onclick="abrirPagamento(${p.locacao_id}, ${p.valor_pendente})">+ Pagar</button>
+      ${podeLancarFinanceiro() ? `<button class="action-btn" onclick="abrirPagamento(${p.locacao_id}, ${p.valor_pendente})">+ Pagar</button>` : ''}
       <button class="action-btn" onclick="abrirExtra(${p.locacao_id})">+ Extra</button>
     </td>
   </tr>`).join('');
@@ -912,8 +974,8 @@ function renderFinanciamentos(lista) {
     <td>R$ ${fin.total_devido?.toFixed(2)}</td>
     <td>${fin.quitado ? '<span class="badge badge-green">Quitado</span>' : '<span class="badge badge-yellow">Ativo</span>'}</td>
     <td>
-      ${!fin.quitado ? `<button class="action-btn" onclick="pagarParcela(${fin.id})">✓ Parcela</button>` : ''}
-      <button class="action-btn danger" onclick="excluirFinanciamento(${fin.id})">Excluir</button>
+      ${!fin.quitado && podeLancarFinanceiro() ? `<button class="action-btn" onclick="pagarParcela(${fin.id})">✓ Parcela</button>` : ''}
+      ${podeExcluir() ? `<button class="action-btn danger" onclick="excluirFinanciamento(${fin.id})">Excluir</button>` : ''}
     </td>
   </tr>`).join('');
 }
@@ -937,10 +999,7 @@ async function mostrarAlertas() {
     if (!alertas.length) { div.innerHTML = '<div class="empty-state" style="padding:48px;text-align:center;color:var(--gray)">✅ Nenhuma parcela vencendo nos próximos 5 dias!</div>'; return; }
     div.innerHTML = alertas.map(a => `
       <div class="alert-card">
-        <div class="alert-info">
-          <strong>${a.placa||'—'}</strong> — ${a.banco}<br>
-          Parcela: <strong>R$ ${a.parcela_mensal?.toFixed(2)}</strong> | Vence em: <strong>${formatData(a.proxima_parcela)}</strong>
-        </div>
+        <div class="alert-info"><strong>${a.placa||'—'}</strong> — ${a.banco}<br>Parcela: <strong>R$ ${a.parcela_mensal?.toFixed(2)}</strong> | Vence em: <strong>${formatData(a.proxima_parcela)}</strong></div>
         <div class="alert-dias">⚠️ ${a.dias_restantes} dia(s)</div>
       </div>`).join('');
   } catch { document.getElementById('lista-alertas').innerHTML = '<div class="empty-state">Erro ao carregar alertas.</div>'; }
@@ -957,11 +1016,8 @@ async function mostrarRelatorio() {
     const tbody = document.getElementById('tabela-relatorio');
     if (!relatorio.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum dado.</td></tr>'; return; }
     tbody.innerHTML = relatorio.map(r => `<tr>
-      <td><strong>${r.placa||'—'}</strong></td>
-      <td>${r.modelo||'—'}</td>
-      <td>${r.banco}</td>
-      <td>R$ ${r.total_pago_parcelas?.toFixed(2)}</td>
-      <td>R$ ${r.receita_gerada?.toFixed(2)}</td>
+      <td><strong>${r.placa||'—'}</strong></td><td>${r.modelo||'—'}</td><td>${r.banco}</td>
+      <td>R$ ${r.total_pago_parcelas?.toFixed(2)}</td><td>R$ ${r.receita_gerada?.toFixed(2)}</td>
       <td style="color:${r.saldo>=0?'var(--green)':'var(--danger)'}">R$ ${r.saldo?.toFixed(2)}</td>
       <td>${r.situacao}</td>
     </tr>`).join('');
@@ -986,9 +1042,7 @@ async function salvarFinanciamento() {
     parcelas_pagas: parseInt(document.getElementById('f-pagas').value)||0,
     data_inicio: document.getElementById('f-inicio').value
   };
-  if (!body.veiculo_id||!body.banco||!body.parcela_mensal||!body.total_parcelas||!body.data_inicio) {
-    showToast('Preencha todos os campos.','var(--warning)'); return;
-  }
+  if (!body.veiculo_id||!body.banco||!body.parcela_mensal||!body.total_parcelas||!body.data_inicio) { showToast('Preencha todos os campos.','var(--warning)'); return; }
   try {
     const res = await fetch(API+'/financiamentos/', {method:'POST',body:JSON.stringify(body),...auth()});
     if (!res.ok) throw new Error();
@@ -1012,6 +1066,7 @@ async function pagarParcela(id) {
 }
 
 async function excluirFinanciamento(id) {
+  if (!podeExcluir()) { showToast('Sem permissão.', 'var(--danger)'); return; }
   if (!confirm('Excluir este financiamento?')) return;
   try {
     await fetch(API+'/financiamentos/'+id, {method:'DELETE',...auth()});
@@ -1041,7 +1096,7 @@ function renderDespesas(lista) {
     <td>${d.descricao}</td>
     <td>${d.placa||'<span style="color:var(--gray)">Geral</span>'}</td>
     <td style="color:var(--danger)">R$ ${d.valor?.toFixed(2)}</td>
-    <td><button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button></td>
+    <td>${podeExcluir() ? `<button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button>` : ''}</td>
   </tr>`).join('');
 }
 
@@ -1059,11 +1114,7 @@ async function mostrarDespesas(tipo, el) {
       const data = await res.json();
       const tbody = document.getElementById('tabela-despesas-categoria');
       if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Nenhuma despesa.</td></tr>'; return; }
-      tbody.innerHTML = data.map(d => `<tr>
-        <td>${formatCategoria(d.categoria)}</td>
-        <td>${d.quantidade}</td>
-        <td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td>
-      </tr>`).join('');
+      tbody.innerHTML = data.map(d => `<tr><td>${formatCategoria(d.categoria)}</td><td>${d.quantidade}</td><td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td></tr>`).join('');
     } catch {}
   }
   if (tipo === 'veiculo') {
@@ -1074,8 +1125,7 @@ async function mostrarDespesas(tipo, el) {
       const tbody = document.getElementById('tabela-despesas-veiculo');
       if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum dado.</td></tr>'; return; }
       tbody.innerHTML = data.map(d => `<tr>
-        <td><strong>${d.placa}</strong></td>
-        <td>${d.marca} ${d.modelo}</td>
+        <td><strong>${d.placa}</strong></td><td>${d.marca} ${d.modelo}</td>
         <td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td>
         <td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td>
         <td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td>
@@ -1113,6 +1163,7 @@ async function salvarDespesa() {
 }
 
 async function excluirDespesa(id) {
+  if (!podeExcluir()) { showToast('Sem permissão.', 'var(--danger)'); return; }
   if (!confirm('Excluir esta despesa?')) return;
   try {
     await fetch(API+'/despesas/'+id, {method:'DELETE',...auth()});
@@ -1122,12 +1173,72 @@ async function excluirDespesa(id) {
   } catch { showToast('Erro ao excluir.','var(--danger)'); }
 }
 
-function formatCategoria(c) {
-  const m = {
-    manutencao:'🔧 Manutenção', combustivel:'🛢️ Combustível', lavagem:'🧼 Lavagem',
-    salarios:'👨‍💼 Salários', contas:'💡 Contas', aluguel:'🏢 Aluguel',
-    seguro:'🛡️ Seguro', ipva_licenciamento:'📋 IPVA/Licenc.', pecas:'📦 Peças', outros:'📌 Outros'
+async function carregarUsuarios() {
+  try {
+    const res = await fetch(API + '/auth/usuarios', auth());
+    if (!res.ok) { document.getElementById('tabela-usuarios').innerHTML = '<tr><td colspan="5" class="empty-state">Sem permissão.</td></tr>'; return; }
+    const usuarios = await res.json();
+    const tbody = document.getElementById('tabela-usuarios');
+    if (!usuarios.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum usuário.</td></tr>'; return; }
+    tbody.innerHTML = usuarios.map(u => `<tr>
+      <td><strong>${u.nome}</strong></td>
+      <td>${u.email}</td>
+      <td>${badgePerfil(u.perfil)}</td>
+      <td>${u.ativo ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
+      <td>
+        ${u.perfil !== 'admin' ? `
+          <button class="action-btn ${u.ativo ? 'warning' : ''}" onclick="toggleUsuario(${u.id})">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+          <button class="action-btn danger" onclick="excluirUsuario(${u.id})">Excluir</button>
+        ` : '<span style="color:var(--gray);font-size:11px">Protegido</span>'}
+      </td>
+    </tr>`).join('');
+  } catch {}
+}
+
+async function salvarUsuario() {
+  const body = {
+    nome: document.getElementById('u-nome').value,
+    email: document.getElementById('u-email').value,
+    senha: document.getElementById('u-senha').value,
+    perfil: document.getElementById('u-perfil').value
   };
+  if (!body.nome||!body.email||!body.senha) { showToast('Preencha todos os campos.','var(--warning)'); return; }
+  try {
+    const res = await fetch(API+'/auth/registrar', {method:'POST',body:JSON.stringify(body),...auth()});
+    if (!res.ok) throw new Error();
+    fecharModal('modal-usuario');
+    showToast('✓ Usuário criado!');
+    carregarUsuarios();
+  } catch { showToast('Erro ao criar usuário.','var(--danger)'); }
+}
+
+async function excluirUsuario(id) {
+  if (!confirm('Excluir este usuário?')) return;
+  try {
+    await fetch(API+'/auth/usuarios/'+id, {method:'DELETE',...auth()});
+    showToast('Usuário excluído.');
+    carregarUsuarios();
+  } catch { showToast('Erro ao excluir.','var(--danger)'); }
+}
+
+async function toggleUsuario(id) {
+  try {
+    const res = await fetch(API+'/auth/usuarios/'+id+'/toggle', {method:'PUT',...auth()});
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    showToast('✓ '+data.mensagem);
+    carregarUsuarios();
+  } catch { showToast('Erro ao alterar status.','var(--danger)'); }
+}
+
+function badgePerfil(p) {
+  const m = { admin:'badge-purple', atendente:'badge-blue', financeiro:'badge-yellow' };
+  const l = { admin:'Admin', atendente:'Atendente', financeiro:'Financeiro' };
+  return `<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;
+}
+
+function formatCategoria(c) {
+  const m = { manutencao:'🔧 Manutenção', combustivel:'🛢️ Combustível', lavagem:'🧼 Lavagem', salarios:'👨‍💼 Salários', contas:'💡 Contas', aluguel:'🏢 Aluguel', seguro:'🛡️ Seguro', ipva_licenciamento:'📋 IPVA/Licenc.', pecas:'📦 Peças', outros:'📌 Outros' };
   return m[c]||c;
 }
 
