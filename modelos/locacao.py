@@ -16,8 +16,7 @@ class Locacao(Base):
     status         = Column(String, default="Ativa")
     observacoes    = Column(String)
 
-    # Relacionamentos
-    cliente           = relationship("Cliente")
-    veiculo           = relationship("Veiculo")
-    pagamentos        = relationship("Pagamento", back_populates="locacao")
-    cobranças_extras  = relationship("CobrancaExtra", back_populates="locacao")
+    cliente          = relationship("Cliente")
+    veiculo          = relationship("Veiculo")
+    pagamentos       = relationship("Pagamento", back_populates="locacao")
+    cobrancas_extras = relationship("CobrancaExtra", back_populates="locacao")
