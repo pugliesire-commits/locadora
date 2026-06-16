@@ -165,7 +165,7 @@ def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_to
             Financiamento.parcelas_pagas < Financiamento.total_parcelas
         ).all()
         for f in financiamentos:
-            proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas + i)
+            proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas)
             if inicio <= proxima <= fim:
                 fin_prev += f.parcela_mensal
 
