@@ -627,7 +627,22 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal-editar-fin">
+  <div class="modal">
+    <div class="modal-title">Editar Financiamento</div>
+    <div class="modal-grid">
+      <div class="field full"><label>Banco / Financeira</label><input id="ef-banco" placeholder="Ex: Santander"/></div>
+      <div class="field"><label>Valor Financiado (R$)</label><input id="ef-valor" type="number" placeholder="0.00"/></div>
+      <div class="field"><label>Parcela Mensal (R$)</label><input id="ef-parcela" type="number" placeholder="0.00"/></div>
+      <div class="field"><label>Total de Parcelas</label><input id="ef-total" type="number" placeholder="60"/></div>
+      <div class="field"><label>Parcelas já pagas</label><input id="ef-pagas" type="number" placeholder="0"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-editar-fin')">Cancelar</button>
+      <button class="btn-save" onclick="salvarEdicaoFinanciamento()">Salvar</button>
+    </div>
+  </div>
+</div><div class="toast" id="toast"></div>
 <script>
 const API = '';
 let TOKEN = '';
