@@ -1179,13 +1179,15 @@ function editarFinanciamento(id){
   document.getElementById('ef-pagas').value=fin.parcelas_pagas||0;
   document.getElementById('ef-total').value=fin.total_parcelas||0;
   document.getElementById('ef-valor').value=fin.valor_financiado||'';
+ document.getElementById('ef-inicio').value=fin.data_inicio||'';
   document.getElementById('modal-editar-fin').dataset.editId=id;
   document.getElementById('modal-editar-fin').classList.add('open');
 }
 
 async function salvarEdicaoFinanciamento(){
   const id=document.getElementById('modal-editar-fin').dataset.editId;
-  const body={banco:document.getElementById('ef-banco').value,parcela_mensal:parseFloat(document.getElementById('ef-parcela').value)||0,parcelas_pagas:parseInt(document.getElementById('ef-pagas').value)||0,total_parcelas:parseInt(document.getElementById('ef-total').value)||0,valor_financiado:parseFloat(document.getElementById('ef-valor').value)||0};
+  const body={banco:document.getElementById('ef-banco').value,parcela_mensal:parseFloat(document.getElementById('ef-parcela').value)||0,parcelas_pagas:parseInt(document.getElementById('ef-pagas').value)||0,total_parcelas:parseInt(document.getElementById('ef-total').value)||0,valor_financiado:parseFloat(document.getElementById('ef-valor').value)||0,
+data_inicio:document.getElementById('ef-inicio').value};
   try{const res=await fetch(API+'/financiamentos/'+id,{method:'PUT',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-editar-fin');showToast('✓ Financiamento atualizado!');carregarFinanciamentos();}catch{showToast('Erro ao salvar.','var(--danger)');}
 }
 
