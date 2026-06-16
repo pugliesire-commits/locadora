@@ -1256,7 +1256,71 @@ function renderExtratoDetalhado(dados){
 function toggleDetalhes(id,headerEl){const el=document.getElementById(id);const icone=document.getElementById('icone-'+id.split('-')[1]);el.classList.toggle('aberto');if(icone)icone.classList.toggle('aberto');}
 async function excluirLancamentoEAtualizar(id,investidorId){if(!confirm('Excluir este lançamento?'))return;try{const res=await fetch(API+'/investidores/lancamentos/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('✓ Lançamento excluído!');const tabAtiva=document.querySelector('#tabs-investidores-extrato .tab-btn.active');if(tabAtiva)tabAtiva.click();}catch{showToast('Erro ao excluir.','var(--danger)');}}
 
-/* ===== HELPERS ===== */
+/* ===== RELATÓRIO ===== */
+function mostrarAbaRelatorio(aba,el){
+  document.querySelectorAll('#page-relatorio .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('area-contas-mes').style.display='none';
+  document.getElementById('area-dre').style.display='none';
+  document.getElementById('area-projecao').style.display='none';
+  if(aba==='contas'){document.getElementById('area-contas-mes').style.display='block';carregarContasMes();}
+  else if(aba==='dre'){document.getElementById('area-dre').style.display='block';carregarDRE();}
+  else if(aba==='projecao'){document.getElementById('area-projecao').style.display='block';carregarProjecao();}
+}
+
+async function carregarContasMes(){
+  const mes=document.getElementById('filtro-mes-relatorio').value||new Date().toISOString().slice(0,7);
+  try{
+    const res=await fetch(API+'/relatorio/contas-do-mes?mes='+mes,auth());
+    const data=await res.json();
+    const r=data.resumo;
+    document.getElementById('resumo-contas-mes').innerHTML=
+      '<div class="stat-card"><div class="stat-label">Total a Receber</div><div class="stat-value" style="color:var(--green)">R$ '+r.total_a_receber.toFixed(2)+'</div></div>'+
+      '<div class="stat-card"><div class="stat-label">Já Recebido</div><div class="stat-value accent">R$ '+r.total_recebido.toFixed(2)+'</div></div>'+
+      '<div class="stat-card"><div class="stat-label">Total a Pagar</div><div class="stat-value" style="color:var(--danger)">R$ '+r.total_a_pagar.toFixed(2)+'</div></div>'+
+      '<div class="stat-card"><div class="stat-label">Saldo do Mês</div><div class="stat-value" style="color:'+(r.saldo_mes>=0?'var(--green)':'var(--danger)')+'">R$ '+r.saldo_mes.toFixed(2)+'</div></div>';
+    const listaR=document.getElementById('lista-a-receber');
+    if(!data.a_receber.length){listaR.innerHTML='<div class="empty-state">Nenhuma parcela no mês.</div>';}
+    else{listaR.innerHTML=data.a_receber.map(x=>{
+      const cor=x.status==='pago'?'var(--green)':x.status==='parcial'?'var(--warning)':'var(--danger)';
+      const badge=x.status==='pago'?'✓ Pago':x.status==='parcial'?'Parcial':'Pendente';
+      return '<div class="parcela-card" style="margin-bottom:6px"><div class="parcela-info"><span class="parcela-num" style="color:var(--gray);font-size:11px">'+formatData(x.vencimento)+'</span><span style="font-size:12px;color:var(--light)">'+x.descricao+'</span></div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--green);font-weight:700;font-size:13px">R$ '+x.valor.toFixed(2)+'</span><span class="badge" style="background:'+cor+'22;color:'+cor+'">'+badge+'</span></div></div>';
+    }).join('');}
+    const listaP=document.getElementById('lista-a-pagar');
+    const tudo=[...data.a_pagar_financiamentos.map(x=>({...x,cor:'var(--warning)'})),...data.a_pagar_despesas.map(x=>({...x,cor:'var(--danger)'}))];
+    if(!tudo.length){listaP.innerHTML='<div class="empty-state">Nenhuma conta a pagar.</div>';}
+    else{listaP.innerHTML=tudo.map(x=>'<div class="parcela-card" style="margin-bottom:6px"><div class="parcela-info"><span class="parcela-num" style="color:var(--gray);font-size:11px">'+formatData(x.vencimento)+'</span><span style="font-size:12px;color:var(--light)">'+x.descricao+'</span></div><div style="display:flex;align-items:center;gap:8px"><span style="color:'+x.cor+';font-weight:700;font-size:13px">R$ '+x.valor.toFixed(2)+'</span></div></div>').join('');}
+  }catch(e){console.error(e);}
+}
+
+async function carregarDRE(){
+  const ano=document.getElementById('filtro-ano-dre').value||new Date().getFullYear();
+  try{
+    const res=await fetch(API+'/relatorio/dre?ano='+ano,auth());
+    const data=await res.json();
+    const tbody=document.getElementById('tabela-dre');
+    let totR=0,totD=0,totF=0,totL=0;
+    tbody.innerHTML=data.meses.map(m=>{
+      totR+=m.receita;totD+=m.despesas;totF+=m.parcelas_financiamento;totL+=m.lucro_liquido;
+      const cor=m.lucro_liquido>=0?'var(--green)':'var(--danger)';
+      return '<tr><td><strong>'+m.mes_nome+'</strong></td><td style="color:var(--green)">R$ '+m.receita.toFixed(2)+'</td><td style="color:var(--danger)">R$ '+m.despesas.toFixed(2)+'</td><td style="color:var(--warning)">R$ '+m.parcelas_financiamento.toFixed(2)+'</td><td style="color:'+cor+';font-weight:700">R$ '+m.lucro_liquido.toFixed(2)+'</td></tr>';
+    }).join('');
+    const corT=totL>=0?'var(--green)':'var(--danger)';
+    document.getElementById('tfoot-dre').innerHTML='<tr style="border-top:2px solid var(--border)"><td><strong>TOTAL</strong></td><td style="color:var(--green);font-weight:700">R$ '+totR.toFixed(2)+'</td><td style="color:var(--danger);font-weight:700">R$ '+totD.toFixed(2)+'</td><td style="color:var(--warning);font-weight:700">R$ '+totF.toFixed(2)+'</td><td style="color:'+corT+';font-weight:700">R$ '+totL.toFixed(2)+'</td></tr>';
+  }catch(e){console.error(e);}
+}
+
+async function carregarProjecao(){
+  try{
+    const res=await fetch(API+'/relatorio/projecao',auth());
+    const data=await res.json();
+    document.getElementById('tabela-projecao').innerHTML=data.map(m=>{
+      const cor=m.saldo_previsto>=0?'var(--green)':'var(--danger)';
+      return '<tr><td><strong>'+m.mes_nome+'</strong></td><td style="color:var(--green)">R$ '+m.receita_prevista.toFixed(2)+'</td><td style="color:var(--warning)">R$ '+m.financiamentos_previstos.toFixed(2)+'</td><td style="color:'+cor+';font-weight:700">R$ '+m.saldo_previsto.toFixed(2)+'</td></tr>';
+    }).join('');
+  }catch(e){console.error(e);}
+}
+ /* ===== HELPERS ===== */
 function badgePerfil(p){const m={admin:'badge-purple',atendente:'badge-blue',financeiro:'badge-yellow'};const l={admin:'Admin',atendente:'Atendente',financeiro:'Financeiro'};return`<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;}
 function formatCategoria(c){const m={manutencao:'🔧 Manutenção',combustivel:'🛢️ Combustível',lavagem:'🧼 Lavagem',salarios:'👨‍💼 Salários',contas:'💡 Contas',aluguel:'🏢 Aluguel',seguro:'🛡️ Seguro',ipva_licenciamento:'📋 IPVA/Licenc.',pecas:'📦 Peças',outros:'📌 Outros'};return m[c]||c;}
 function badgeStatus(s){const m={'Disponível':'green','Ativa':'green','Alugado':'yellow','Pendente':'yellow','Encerrada':'gray','Paga':'blue','Concluída':'gray'};return`<span class="badge badge-${m[s]||'gray'}">${s}</span>`;}
