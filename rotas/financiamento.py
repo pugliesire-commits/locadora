@@ -24,8 +24,12 @@ class FinanciamentoCreate(BaseModel):
 
 class FinanciamentoUpdate(BaseModel):
     banco: Optional[str] = None
+    valor_financiado: Optional[float] = None
+    entrada: Optional[float] = None
     parcela_mensal: Optional[float] = None
+    total_parcelas: Optional[int] = None
     parcelas_pagas: Optional[int] = None
+    data_inicio: Optional[date] = None
 
 @router.post("/")
 def criar_financiamento(dados: FinanciamentoCreate, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
@@ -43,6 +47,8 @@ def listar_financiamentos(db: Session = Depends(get_db), usuario=Depends(verific
     financiamentos = db.query(Financiamento).all()
     resultado = []
     for f in financiamentos:
+        from dateutil.relativedelta import relativedelta
+        proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas)
         resultado.append({
             "id": f.id,
             "veiculo_id": f.veiculo_id,
@@ -58,7 +64,8 @@ def listar_financiamentos(db: Session = Depends(get_db), usuario=Depends(verific
             "total_pago": f.total_pago,
             "total_devido": f.total_devido,
             "quitado": f.quitado,
-            "data_inicio": f.data_inicio
+            "data_inicio": f.data_inicio,
+            "proxima_parcela": proxima.isoformat()
         })
     return resultado
 
@@ -66,20 +73,25 @@ def listar_financiamentos(db: Session = Depends(get_db), usuario=Depends(verific
 def alertas_vencimento(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     hoje = date.today()
     alertas = []
-    financiamentos = db.query(Financiamento).filter(Financiamento.parcelas_pagas < Financiamento.total_parcelas).all()
+    financiamentos = db.query(Financiamento).filter(
+        Financiamento.parcelas_pagas < Financiamento.total_parcelas
+    ).all()
     for f in financiamentos:
         from dateutil.relativedelta import relativedelta
-        proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas + 1)
+        proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas)
         dias_restantes = (proxima - hoje).days
-        if 0 <= dias_restantes <= 5:
+        if dias_restantes <= 30:
             alertas.append({
+                "id": f.id,
                 "veiculo_id": f.veiculo_id,
                 "placa": f.veiculo.placa if f.veiculo else None,
                 "banco": f.banco,
                 "parcela_mensal": f.parcela_mensal,
-                "proxima_parcela": proxima,
-                "dias_restantes": dias_restantes
+                "proxima_parcela": proxima.isoformat(),
+                "dias_restantes": dias_restantes,
+                "vencido": dias_restantes < 0
             })
+    alertas.sort(key=lambda x: x["dias_restantes"])
     return alertas
 
 @router.get("/relatorio")
@@ -87,7 +99,9 @@ def relatorio_receita_vs_parcela(db: Session = Depends(get_db), usuario=Depends(
     financiamentos = db.query(Financiamento).all()
     relatorio = []
     for f in financiamentos:
-        receita = db.query(func.sum(Locacao.valor_total)).filter(Locacao.veiculo_id == f.veiculo_id).scalar() or 0
+        receita = db.query(func.sum(Locacao.valor_total)).filter(
+            Locacao.veiculo_id == f.veiculo_id
+        ).scalar() or 0
         relatorio.append({
             "veiculo_id": f.veiculo_id,
             "placa": f.veiculo.placa if f.veiculo else None,
@@ -122,7 +136,22 @@ def pagar_parcela(financiamento_id: int, db: Session = Depends(get_db), usuario=
         raise HTTPException(status_code=400, detail="Financiamento já quitado")
     f.parcelas_pagas += 1
     db.commit()
-    return {"mensagem": "Parcela registrada!", "parcelas_pagas": f.parcelas_pagas, "parcelas_restantes": f.parcelas_restantes}
+    return {
+        "mensagem": "Parcela registrada!",
+        "parcelas_pagas": f.parcelas_pagas,
+        "parcelas_restantes": f.parcelas_restantes
+    }
+
+@router.put("/{financiamento_id}")
+def editar_financiamento(financiamento_id: int, dados: FinanciamentoUpdate, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    f = db.query(Financiamento).filter(Financiamento.id == financiamento_id).first()
+    if not f:
+        raise HTTPException(status_code=404, detail="Financiamento não encontrado")
+    for campo, valor in dados.dict(exclude_unset=True).items():
+        setattr(f, campo, valor)
+    db.commit()
+    db.refresh(f)
+    return {"mensagem": "Financiamento atualizado!", "id": f.id}
 
 @router.delete("/{financiamento_id}")
 def deletar_financiamento(financiamento_id: int, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
