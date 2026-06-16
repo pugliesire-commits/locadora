@@ -795,6 +795,11 @@ function mostrarPagina(nome, el) {
   else if (nome === 'usuarios') carregarUsuarios();
   else if (nome === 'investidores') carregarInvestidores();
   else if (nome === 'extrato') carregarTabsExtrato();
+   else if (nome === 'relatorio') {
+  document.getElementById('filtro-mes-relatorio').value=new Date().toISOString().slice(0,7);
+  document.getElementById('filtro-ano-dre').value=new Date().getFullYear();
+  mostrarAbaRelatorio('contas',document.querySelector('#page-relatorio .tab-btn'));
+}
   else carregarDashboard();
 }
 
