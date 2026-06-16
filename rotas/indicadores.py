@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from modelos.database import get_db
 from modelos.locacao import Locacao
-from modelos.pagamento import Pagamento
+from modelos.parcela import Parcela
 from modelos.despesa import Despesa
 from modelos.financiamento import Financiamento
 from modelos.veiculo import Veiculo
@@ -14,7 +14,9 @@ router = APIRouter(prefix="/indicadores", tags=["Indicadores"])
 
 @router.get("/resumo")
 def resumo_financeiro(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
-    receita_total = db.query(func.sum(Pagamento.valor_pago)).scalar() or 0
+    receita_total = db.query(func.sum(Parcela.valor_pago)).filter(
+        Parcela.status.in_(["pago", "parcial"])
+    ).scalar() or 0
     despesas_total = db.query(func.sum(Despesa.valor)).scalar() or 0
     parcelas_total = sum(f.total_pago for f in db.query(Financiamento).all())
     lucro_liquido = receita_total - despesas_total - parcelas_total
@@ -31,11 +33,18 @@ def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_tok
     veiculos = db.query(Veiculo).all()
     resultado = []
     for v in veiculos:
-        receita = db.query(func.sum(Pagamento.valor_pago)).join(
-            Locacao, Pagamento.locacao_id == Locacao.id
-        ).filter(Locacao.veiculo_id == v.id).scalar() or 0
-        despesas = db.query(func.sum(Despesa.valor)).filter(Despesa.veiculo_id == v.id).scalar() or 0
-        financiamentos = db.query(Financiamento).filter(Financiamento.veiculo_id == v.id).all()
+        receita = db.query(func.sum(Parcela.valor_pago)).join(
+            Locacao, Parcela.locacao_id == Locacao.id
+        ).filter(
+            Locacao.veiculo_id == v.id,
+            Parcela.status.in_(["pago", "parcial"])
+        ).scalar() or 0
+        despesas = db.query(func.sum(Despesa.valor)).filter(
+            Despesa.veiculo_id == v.id
+        ).scalar() or 0
+        financiamentos = db.query(Financiamento).filter(
+            Financiamento.veiculo_id == v.id
+        ).all()
         parcelas = sum(f.total_pago for f in financiamentos)
         custo_total = despesas + parcelas
         lucro = receita - custo_total
@@ -61,9 +70,10 @@ def evolucao_mensal(db: Session = Depends(get_db), usuario=Depends(verificar_tok
     meses = []
     nomes_meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     for mes in range(1, 13):
-        receita = db.query(func.sum(Pagamento.valor_pago)).filter(
-            extract('month', Pagamento.data_pagamento) == mes,
-            extract('year', Pagamento.data_pagamento) == ano_atual
+        receita = db.query(func.sum(Parcela.valor_pago)).filter(
+            extract('month', Parcela.data_pagamento) == mes,
+            extract('year', Parcela.data_pagamento) == ano_atual,
+            Parcela.status.in_(["pago", "parcial"])
         ).scalar() or 0
         despesas = db.query(func.sum(Despesa.valor)).filter(
             extract('month', Despesa.data) == mes,
@@ -80,16 +90,17 @@ def evolucao_mensal(db: Session = Depends(get_db), usuario=Depends(verificar_tok
 
 @router.get("/fluxo-caixa")
 def fluxo_caixa(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
-    from datetime import date, timedelta
+    from datetime import date
     hoje = date.today()
     inicio_mes = hoje.replace(day=1)
-    pagamentos = db.query(Pagamento).filter(
-        Pagamento.data_pagamento >= inicio_mes
+    parcelas = db.query(Parcela).filter(
+        Parcela.data_pagamento >= inicio_mes,
+        Parcela.status.in_(["pago", "parcial"])
     ).all()
     despesas = db.query(Despesa).filter(
         Despesa.data >= inicio_mes
     ).all()
-    entradas = sum(p.valor_pago for p in pagamentos)
+    entradas = sum(p.valor_pago for p in parcelas)
     saidas = sum(d.valor for d in despesas)
     saldo = entradas - saidas
     return {
