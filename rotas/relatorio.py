@@ -101,6 +101,7 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
     if not ano:
         ano = date.today().year
     meses = []
+    financiamentos = db.query(Financiamento).all()
     for m in range(1, 13):
         inicio = date(ano, m, 1)
         if m == 12:
@@ -119,12 +120,14 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
             Despesa.data <= fim
         ).scalar() or 0
 
+        # Parcelas de financiamento que venceram neste mês (pagas ou não)
         parcelas_fin = 0
-        financiamentos = db.query(Financiamento).all()
         for f in financiamentos:
-            proxima = f.data_inicio + relativedelta(months=f.parcelas_pagas)
-            if inicio <= proxima <= fim:
-                parcelas_fin += f.parcela_mensal
+            meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
+            if meses_desde_inicio >= 0 and meses_desde_inicio < f.total_parcelas:
+                proxima = f.data_inicio + relativedelta(months=meses_desde_inicio)
+                if inicio <= proxima <= fim:
+                    parcelas_fin += f.parcela_mensal
 
         lucro = receita - despesas - parcelas_fin
         meses.append({
