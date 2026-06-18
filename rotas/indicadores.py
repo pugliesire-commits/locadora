@@ -34,6 +34,9 @@ def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_tok
     veiculos = db.query(Veiculo).all()
     resultado = []
     hoje = date.today()
+    ano_atual = hoje.year
+    inicio_ano = date(ano_atual, 1, 1)
+    resultado = []
     for v in veiculos:
         receita = db.query(func.sum(Parcela.valor_pago)).join(
             Locacao, Parcela.locacao_id == Locacao.id
@@ -44,7 +47,7 @@ def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_tok
         despesas = db.query(func.sum(Despesa.valor)).filter(
             Despesa.veiculo_id == v.id
         ).scalar() or 0
-        # Parcelas de financiamento pagas até hoje
+        # Parcelas de financiamento pagas no ano atual até hoje
         financiamentos = db.query(Financiamento).filter(
             Financiamento.veiculo_id == v.id
         ).all()
@@ -52,7 +55,7 @@ def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_tok
         for f in financiamentos:
             for i in range(f.parcelas_pagas):
                 data_parcela = f.data_inicio + relativedelta(months=i)
-                if data_parcela <= hoje:
+                if inicio_ano <= data_parcela <= hoje:
                     parcelas += f.parcela_mensal
         custo_total = despesas + parcelas
         lucro = receita - custo_total
@@ -93,7 +96,6 @@ def evolucao_mensal(db: Session = Depends(get_db), usuario=Depends(verificar_tok
             extract('month', Despesa.data) == mes,
             extract('year', Despesa.data) == ano_atual
         ).scalar() or 0
-        # Parcelas de financiamento que venceram neste mês
         parcelas_fin = 0
         for f in financiamentos:
             meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
