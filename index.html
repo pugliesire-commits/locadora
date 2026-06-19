@@ -944,6 +944,7 @@ async function carregarLocacoes(){
       <td>${badgeStatus(l.status)}</td>
       <td>
         <button class="action-btn" onclick="verRecebimentos(${l.id})">💰 Receber</button>
+${l.status==='Ativa'&&podeEditar()?`<button class="action-btn warning" onclick="devolverVeiculo(${l.id})">🔑 Devolver</button>`:''}
         <button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>
         ${podeExcluir()?`<button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>`:''}
       </td>
