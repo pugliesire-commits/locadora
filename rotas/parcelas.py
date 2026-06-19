@@ -13,6 +13,7 @@ class PagamentoParcela(BaseModel):
     forma_pagamento: str
     valor_pago: float
     observacao: Optional[str] = None
+    data_pagamento: Optional[date] = None
 
 @router.get("/locacao/{locacao_id}")
 def listar_parcelas(locacao_id: int, db: Session = Depends(get_db)):
@@ -50,7 +51,7 @@ def pagar_parcela(parcela_id: int, dados: PagamentoParcela, db: Session = Depend
     parcela.valor_pago = (parcela.valor_pago or 0) + dados.valor_pago
     parcela.forma_pagamento = dados.forma_pagamento
     parcela.observacao = dados.observacao
-    parcela.data_pagamento = date.today()
+    parcela.data_pagamento = dados.data_pagamento if dados.data_pagamento else date.today()
     if parcela.valor_pago >= parcela.valor:
         parcela.status = 'pago'
     else:
@@ -72,10 +73,10 @@ def editar_parcela(parcela_id: int, dados: PagamentoParcela, db: Session = Depen
         parcela.data_pagamento = None
     elif dados.valor_pago >= parcela.valor:
         parcela.status = 'pago'
-        parcela.data_pagamento = date.today()
+        parcela.data_pagamento = dados.data_pagamento if dados.data_pagamento else date.today()
     else:
         parcela.status = 'parcial'
-        parcela.data_pagamento = date.today()
+        parcela.data_pagamento = dados.data_pagamento if dados.data_pagamento else date.today()
     db.commit()
     db.refresh(parcela)
     return parcela
