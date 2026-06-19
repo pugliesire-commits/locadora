@@ -5,6 +5,7 @@ from modelos.database import get_db
 from modelos.financiamento import Financiamento
 from modelos.veiculo import Veiculo
 from modelos.locacao import Locacao
+from modelos.despesa import Despesa
 from modelos.seguranca import verificar_token
 from pydantic import BaseModel
 from datetime import date, timedelta
@@ -38,6 +39,17 @@ def criar_financiamento(dados: FinanciamentoCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Veículo não encontrado")
     financiamento = Financiamento(**dados.dict())
     db.add(financiamento)
+    db.flush()
+    # Se houver entrada, registra como despesa vinculada ao veículo
+    if dados.entrada and dados.entrada > 0:
+        despesa_entrada = Despesa(
+            categoria="outros",
+            descricao=f"Entrada financiamento {dados.banco} — {veiculo.placa}",
+            valor=dados.entrada,
+            data=dados.data_inicio,
+            veiculo_id=dados.veiculo_id
+        )
+        db.add(despesa_entrada)
     db.commit()
     db.refresh(financiamento)
     return {"mensagem": "Financiamento criado com sucesso", "id": financiamento.id}
