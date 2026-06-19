@@ -120,7 +120,6 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
             Despesa.data <= fim
         ).scalar() or 0
 
-        # Parcelas de financiamento que venceram neste mês (pagas ou não)
         parcelas_fin = 0
         for f in financiamentos:
             meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
@@ -143,6 +142,26 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
 @router.get("/projecao")
 def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     hoje = date.today()
+
+    # Calcula média de despesas dos últimos 3 meses
+    total_desp_3m = 0
+    meses_com_despesa = 0
+    for i in range(1, 4):
+        mes_ant = hoje - relativedelta(months=i)
+        inicio_ant = date(mes_ant.year, mes_ant.month, 1)
+        if mes_ant.month == 12:
+            fim_ant = date(mes_ant.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            fim_ant = date(mes_ant.year, mes_ant.month + 1, 1) - timedelta(days=1)
+        desp = db.query(func.sum(Despesa.valor)).filter(
+            Despesa.data >= inicio_ant,
+            Despesa.data <= fim_ant
+        ).scalar() or 0
+        if desp > 0:
+            total_desp_3m += desp
+            meses_com_despesa += 1
+    media_despesas = round(total_desp_3m / meses_com_despesa, 2) if meses_com_despesa > 0 else 0
+
     projecao = []
     for i in range(6):
         mes_ref = hoje + relativedelta(months=i)
@@ -169,12 +188,14 @@ def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_to
                 if inicio <= proxima <= fim:
                     fin_prev += f.parcela_mensal
 
-        saldo = receita_prev - fin_prev
+        saidas_prev = round(fin_prev + media_despesas, 2)
+        saldo = round(receita_prev - saidas_prev, 2)
+
         projecao.append({
             "mes": mes_ref.strftime("%Y-%m"),
             "mes_nome": ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][mes_ref.month-1],
             "receita_prevista": round(receita_prev, 2),
-            "financiamentos_previstos": round(fin_prev, 2),
-            "saldo_previsto": round(saldo, 2)
+            "financiamentos_previstos": saidas_prev,
+            "saldo_previsto": saldo
         })
     return projecao
