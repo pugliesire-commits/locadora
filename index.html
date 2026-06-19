@@ -994,7 +994,7 @@ async function salvarLocacao(){
   if(!body.cliente_id||!body.veiculo_id||!body.data_inicio||!body.data_fim||!body.valor_periodo){showToast('Preencha todos os campos.','var(--warning)');return;}
   try{const res=await fetch(API+'/locacoes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();const data=await res.json();fecharModal('modal-locacao');showToast(`✓ Locação criada! ${data.periodo} — R$ ${data.valor_total?.toFixed(2)}`);await carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}
 }
-
+async function devolverVeiculo(id){if(!confirm('Confirmar devolução do veículo?'))return;try{const res=await fetch(API+'/locacoes/'+id+'/devolver',{method:'PUT',...auth()});if(!res.ok)throw new Error();const data=await res.json();showToast('✓ Veículo devolvido! '+(data.dias_atraso>0?'Atraso: '+data.dias_atraso+' dia(s)':'Sem atraso'));carregarLocacoes();carregarDashboard();}catch{showToast('Erro ao devolver.','var(--danger)');}}
 async function excluirLocacao(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir esta locação e todas as parcelas?'))return;try{const res=await fetch(API+'/locacoes/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('Locação excluída.');await carregarLocacoes();carregarDashboard();}catch{showToast('Erro ao excluir.','var(--danger)');}}
 
 function abrirExtra(locacaoId){locacaoSelecionada=locacaoId;document.getElementById('modal-extra').classList.add('open');}
