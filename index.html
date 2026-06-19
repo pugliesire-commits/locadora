@@ -1087,6 +1087,7 @@ function abrirReceberParcela(parcelaId, valor, valorPago, dataVenc){
     <div class="resumo-row"><span class="resumo-label">Falta receber</span><span class="resumo-value ${falta>0?'red':'green'}">R$ ${falta.toFixed(2)}</span></div>`;
   document.getElementById('r-valor').value=falta>0?falta.toFixed(2):'';
   document.getElementById('r-obs').value='';
+ document.getElementById('r-data-pagamento').value=new Date().toISOString().split('T')[0];
   document.getElementById('modal-receber-parcela').classList.add('open');
 }
 
@@ -1099,11 +1100,12 @@ function editarParcela(parcelaId, valor, valorPago, dataVenc, obs){
     '<div class="resumo-row"><span class="resumo-label" style="color:var(--warning)">⚠️ Editar irá substituir o valor pago</span></div>';
   document.getElementById('r-valor').value=valorPago.toFixed(2);
   document.getElementById('r-obs').value=obs||'';
+ document.getElementById('r-data-pagamento').value=new Date().toISOString().split('T')[0];
   document.getElementById('modal-receber-parcela').classList.add('open');
 }
 
 async function confirmarRecebimento(){
-  const body={forma_pagamento:document.getElementById('r-forma').value,valor_pago:parseFloat(document.getElementById('r-valor').value)||0,observacao:document.getElementById('r-obs').value};
+  const body={forma_pagamento:document.getElementById('r-forma').value,valor_pago:parseFloat(document.getElementById('r-valor').value)||0,observacao:document.getElementById('r-obs').value,data_pagamento:document.getElementById('r-data-pagamento').value||null};
   if(!body.valor_pago){showToast('Digite o valor recebido.','var(--warning)');return;}
   try{
     const res=await fetch(API+'/parcelas/'+parcelaSelecionadaId+'/pagar',{method:'PUT',body:JSON.stringify(body),...auth()});
