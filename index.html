@@ -1088,7 +1088,7 @@ function abrirReceberParcela(parcelaId, valor, valorPago, dataVenc){
   document.getElementById('modal-receber-parcela').classList.add('open');
 }
 
-function editarParcela(parcelaId, valor, valorPago, dataVenc){
+function editarParcela(parcelaId, valor, valorPago, dataVenc, obs){
   parcelaSelecionadaId=parcelaId;
   document.getElementById('modal-receber-title').textContent='Editar Recebimento — Venc. '+dataVenc;
   document.getElementById('resumo-parcela-receber').innerHTML=
@@ -1096,7 +1096,7 @@ function editarParcela(parcelaId, valor, valorPago, dataVenc){
     '<div class="resumo-row"><span class="resumo-label">Valor pago atual</span><span class="resumo-value green">R$ '+valorPago.toFixed(2)+'</span></div>'+
     '<div class="resumo-row"><span class="resumo-label" style="color:var(--warning)">⚠️ Editar irá substituir o valor pago</span></div>';
   document.getElementById('r-valor').value=valorPago.toFixed(2);
-  document.getElementById('r-obs').value='';
+  document.getElementById('r-obs').value=obs||'';
   document.getElementById('modal-receber-parcela').classList.add('open');
 }
 
