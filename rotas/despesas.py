@@ -8,6 +8,7 @@ from modelos.financiamento import Financiamento
 from modelos.seguranca import verificar_token
 from pydantic import BaseModel
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from typing import Optional
 
 router = APIRouter(prefix="/despesas", tags=["Despesas"])
@@ -24,6 +25,7 @@ class DespesaCreate(BaseModel):
     valor: float
     data: date
     veiculo_id: Optional[int] = None
+    parcelas: Optional[int] = 1
 
 @router.post("/")
 def criar_despesa(dados: DespesaCreate, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
@@ -31,11 +33,26 @@ def criar_despesa(dados: DespesaCreate, db: Session = Depends(get_db), usuario=D
         veiculo = db.query(Veiculo).filter(Veiculo.id == dados.veiculo_id).first()
         if not veiculo:
             raise HTTPException(status_code=404, detail="Veículo não encontrado")
-    despesa = Despesa(**dados.dict())
-    db.add(despesa)
+    parcelas = dados.parcelas or 1
+    valor_parcela = round(dados.valor / parcelas, 2)
+    ids = []
+    for i in range(parcelas):
+        data_parcela = dados.data + relativedelta(months=i)
+        descricao = dados.descricao
+        if parcelas > 1:
+            descricao = f"{dados.descricao} ({i+1}/{parcelas})"
+        despesa = Despesa(
+            categoria=dados.categoria,
+            descricao=descricao,
+            valor=valor_parcela,
+            data=data_parcela,
+            veiculo_id=dados.veiculo_id
+        )
+        db.add(despesa)
+        db.flush()
+        ids.append(despesa.id)
     db.commit()
-    db.refresh(despesa)
-    return {"mensagem": "Despesa registrada com sucesso", "id": despesa.id}
+    return {"mensagem": f"Despesa registrada em {parcelas} parcela(s)", "ids": ids}
 
 @router.get("/")
 def listar_despesas(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
