@@ -301,7 +301,8 @@
             <button class="tab-btn" onclick="mostrarDespesas('categoria',this)">📊 Por Categoria</button>
             <button class="tab-btn" onclick="mostrarDespesas('veiculo',this)">🚗 Por Veículo</button>
           </div>
-          <div id="area-despesas-lista">
+         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><label style="color:var(--gray);font-size:13px">Mês:</label><input type="month" id="filtro-mes-despesas" class="select-input" style="width:180px" onchange="carregarDespesas()"/><button class="btn-cancel" onclick="document.getElementById('filtro-mes-despesas').value='';carregarDespesas()">Todos</button></div> 
+         <div id="area-despesas-lista">
             <div class="table-card">
               <table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Placa</th><th>Valor</th><th></th></tr></thead>
               <tbody id="tabela-despesas"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody></table>
@@ -794,7 +795,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'recebimentos') carregarTabsRecebimentos();
   else if (nome === 'financiamentos') carregarFinanciamentos();
-  else if (nome === 'despesas') carregarDespesas();
+  else if (nome === 'despesas') {document.getElementById('filtro-mes-despesas').value=new Date().toISOString().slice(0,7);carregarDespesas();}
   else if (nome === 'indicadores') carregarIndicadores();
   else if (nome === 'usuarios') carregarUsuarios();
   else if (nome === 'investidores') carregarInvestidores();
@@ -1202,7 +1203,7 @@ data_inicio:document.getElementById('ef-inicio').value};
 async function excluirFinanciamento(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/financiamentos/'+id,{method:'DELETE',...auth()});showToast('Excluído.');carregarFinanciamentos();}catch{showToast('Erro.','var(--danger)');}}
 
 /* ===== DESPESAS ===== */
-async function carregarDespesas(){try{const res=await fetch(API+'/despesas/',auth());despesasCache=await res.json();renderDespesas(despesasCache);}catch{}}
+async function carregarDespesas(){try{const mes=document.getElementById('filtro-mes-despesas')?.value;const url=mes?API+'/despesas/?mes='+mes:API+'/despesas/';const res=await fetch(url,auth());despesasCache=await res.json();renderDespesas(despesasCache);}catch{}}(){try{const res=await fetch(API+'/despesas/',auth());despesasCache=await res.json();renderDespesas(despesasCache);}catch{}}
 function renderDespesas(lista){document.getElementById('area-despesas-lista').style.display='block';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';const tbody=document.getElementById('tabela-despesas');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma despesa.</td></tr>';return;}tbody.innerHTML=lista.map(d=>`<tr><td>${formatData(d.data)}</td><td>${formatCategoria(d.categoria)}</td><td>${d.descricao}</td><td>${d.placa||'<span style="color:var(--gray)">Geral</span>'}</td><td style="color:var(--danger)">R$ ${d.valor?.toFixed(2)}</td><td>${podeExcluir()?`<button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button>`:''}</td></tr>`).join('');}
 async function mostrarDespesas(tipo,el){document.querySelectorAll('#page-despesas .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('area-despesas-lista').style.display='none';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';if(tipo==='lista'){document.getElementById('area-despesas-lista').style.display='block';renderDespesas(despesasCache);return;}if(tipo==='categoria'){document.getElementById('area-despesas-categoria').style.display='block';try{const res=await fetch(API+'/despesas/por-categoria',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-categoria');tbody.innerHTML=data.map(d=>`<tr><td>${formatCategoria(d.categoria)}</td><td>${d.quantidade}</td><td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td></tr>`).join('');}catch{}}if(tipo==='veiculo'){document.getElementById('area-despesas-veiculo').style.display='block';try{const res=await fetch(API+'/despesas/por-veiculo',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-veiculo');tbody.innerHTML=data.map(d=>`<tr><td><strong>${d.placa}</strong></td><td>${d.marca} ${d.modelo}</td><td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td><td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td><td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td></tr>`).join('');}catch{}}}
 async function carregarSelectsDespesa(){const res=await fetch(API+'/veiculos/',auth());const veiculos=await res.json();document.getElementById('d-veiculo').innerHTML='<option value="">Nenhum (despesa geral)</option>'+veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');document.getElementById('d-data').value=new Date().toISOString().split('T')[0];}
