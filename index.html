@@ -176,6 +176,7 @@
         <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
         <div class="nav-item" onclick="mostrarPagina('indicadores',this)">&#9670; Indicadores</div>
        <div class="nav-section">RELATÓRIOS</div>
+<div class="nav-item" onclick="mostrarPagina('aportes',this)">💰 Aportes</div>
 <div class="nav-item" onclick="mostrarPagina('relatorio',this)">📊 Fluxo & DRE</div> 
        <div class="nav-section">INVESTIDORES</div>
         <div class="nav-item" onclick="mostrarPagina('investidores',this)">&#9670; Investidores</div>
@@ -409,6 +410,21 @@
     </div>
   </div>
 </div> 
+      <!-- APORTES -->
+<div id="page-aportes" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <label style="color:var(--gray);font-size:13px">Mês:</label>
+    <input type="month" id="filtro-mes-aportes" class="select-input" style="width:180px" onchange="carregarAportes()"/>
+    <button class="btn-cancel" onclick="document.getElementById('filtro-mes-aportes').value='';carregarAportes()">Todos</button>
+  </div>
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-label">Total de Aportes</div><div class="stat-value accent" id="stat-total-aportes">R$ 0,00</div></div>
+  </div>
+  <div class="table-card">
+    <table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+    <tbody id="tabela-aportes"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody></table>
+  </div>
+</div>
        <!-- INVESTIDORES -->
         <div id="page-investidores" style="display:none">
           <div id="lista-investidores"><div class="empty-state">Carregando...</div></div>
@@ -709,6 +725,30 @@
       <button class="btn-save" onclick="salvarEdicaoFinanciamento()">Salvar</button>
     </div>
   </div>
+</div>
+<div class="modal-overlay" id="modal-aporte">
+  <div class="modal">
+    <div class="modal-title" id="modal-aporte-title">Novo Aporte</div>
+    <div class="modal-grid">
+      <div class="field full"><label>Categoria</label>
+        <select id="ap-categoria" class="select-input">
+          <option value="aporte_capital">💰 Aporte de Capital</option>
+          <option value="capital_giro">🔄 Capital de Giro</option>
+          <option value="divida_recebida">📥 Dívida Recebida</option>
+          <option value="investimento_socio">🤝 Investimento de Sócio</option>
+          <option value="outros">📌 Outros</option>
+        </select>
+      </div>
+      <div class="field full"><label>Descrição</label><input id="ap-descricao" placeholder="Descreva o aporte..."/></div>
+      <div class="field"><label>Valor (R$)</label><input id="ap-valor" type="number" placeholder="0.00" step="0.01"/></div>
+      <div class="field"><label>Data</label><input id="ap-data" type="date"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-aporte')">Cancelar</button>
+      <button class="btn-save" onclick="salvarAporte()">Salvar</button>
+    </div>
+  </div>
+</div>
 </div><div class="toast" id="toast"></div>
 <script>
 const API = '';
@@ -800,7 +840,12 @@ function mostrarPagina(nome, el) {
   else if (nome === 'usuarios') carregarUsuarios();
   else if (nome === 'investidores') carregarInvestidores();
   else if (nome === 'extrato') carregarTabsExtrato();
-   else if (nome === 'relatorio') {
+  else if (nome === 'aportes') {
+  document.getElementById('filtro-mes-aportes').value=new Date().toISOString().slice(0,7);
+  carregarAportes();
+  document.getElementById('btn-novo').style.display='flex';
+} 
+  else if (nome === 'relatorio') {
   document.getElementById('filtro-mes-relatorio').value=new Date().toISOString().slice(0,7);
   document.getElementById('filtro-ano-dre').value=new Date().getFullYear();
   mostrarAbaRelatorio('contas',document.querySelector('#page-relatorio .tab-btn'));
@@ -834,6 +879,15 @@ function abrirModal() {
   else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
   else if (paginaAtual === 'despesas') { carregarSelectsDespesa(); document.getElementById('modal-despesa').classList.add('open'); }
   else if (paginaAtual === 'usuarios') document.getElementById('modal-usuario').classList.add('open');
+  else if (paginaAtual === 'aportes') {
+  aporteEditandoId=null;
+  document.getElementById('modal-aporte-title').textContent='Novo Aporte';
+  document.getElementById('ap-descricao').value='';
+  document.getElementById('ap-valor').value='';
+  document.getElementById('ap-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('ap-categoria').value='aporte_capital';
+  document.getElementById('modal-aporte').classList.add('open');
+}
   else if (paginaAtual === 'investidores') {
     document.getElementById('modal-inv-title').textContent = 'Novo Investidor';
     document.getElementById('modal-investidor').dataset.editId = '';
@@ -1337,6 +1391,77 @@ async function carregarProjecao(){
       return '<tr><td><strong>'+m.mes_nome+'</strong></td><td style="color:var(--green)">R$ '+m.receita_prevista.toFixed(2)+'</td><td style="color:var(--warning)">R$ '+m.financiamentos_previstos.toFixed(2)+'</td><td style="color:'+cor+';font-weight:700">R$ '+m.saldo_previsto.toFixed(2)+'</td></tr>';
     }).join('');
   }catch(e){console.error(e);}
+}
+ /* ===== APORTES ===== */
+let aportesCache = [];
+let aporteEditandoId = null;
+
+async function carregarAportes(){
+  try{
+    const mes=document.getElementById('filtro-mes-aportes')?.value;
+    const url=mes?API+'/aportes?mes='+mes.split('-')[1]+'&ano='+mes.split('-')[0]:API+'/aportes';
+    const res=await fetch(url,auth());
+    aportesCache=await res.json();
+    renderAportes(aportesCache);
+    const total=aportesCache.reduce((s,a)=>s+a.valor,0);
+    document.getElementById('stat-total-aportes').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }catch(e){console.error(e);}
+}
+
+function renderAportes(lista){
+  const tbody=document.getElementById('tabela-aportes');
+  if(!lista.length){tbody.innerHTML='<tr><td colspan="5" class="empty-state">Nenhum aporte registrado.</td></tr>';return;}
+  tbody.innerHTML=lista.map(a=>`<tr>
+    <td>${formatData(a.data)}</td>
+    <td>${formatCategoriaAporte(a.categoria)}</td>
+    <td>${a.descricao}</td>
+    <td style="color:var(--green);font-weight:700">R$ ${a.valor?.toFixed(2)}</td>
+    <td>
+      ${podeEditar()?`<button class="action-btn" onclick="editarAporte(${a.id})">Editar</button>`:''}
+      ${podeExcluir()?`<button class="action-btn danger" onclick="excluirAporte(${a.id})">Excluir</button>`:''}
+    </td>
+  </tr>`).join('');
+}
+
+function formatCategoriaAporte(c){
+  const m={aporte_capital:'💰 Aporte de Capital',capital_giro:'🔄 Capital de Giro',divida_recebida:'📥 Dívida Recebida',investimento_socio:'🤝 Investimento de Sócio',outros:'📌 Outros'};
+  return m[c]||c;
+}
+
+function editarAporte(id){
+  const a=aportesCache.find(x=>x.id===id);if(!a)return;
+  aporteEditandoId=id;
+  document.getElementById('modal-aporte-title').textContent='Editar Aporte';
+  document.getElementById('ap-categoria').value=a.categoria;
+  document.getElementById('ap-descricao').value=a.descricao;
+  document.getElementById('ap-valor').value=a.valor;
+  document.getElementById('ap-data').value=a.data;
+  document.getElementById('modal-aporte').classList.add('open');
+}
+
+async function salvarAporte(){
+  const body={categoria:document.getElementById('ap-categoria').value,descricao:document.getElementById('ap-descricao').value,valor:parseFloat(document.getElementById('ap-valor').value)||0,data:document.getElementById('ap-data').value};
+  if(!body.descricao||!body.valor||!body.data){showToast('Preencha todos os campos.','var(--warning)');return;}
+  try{
+    const url=aporteEditandoId?API+'/aportes/'+aporteEditandoId:API+'/aportes';
+    const method=aporteEditandoId?'PUT':'POST';
+    const res=await fetch(url,{method,body:JSON.stringify(body),...auth()});
+    if(!res.ok)throw new Error();
+    fecharModal('modal-aporte');
+    aporteEditandoId=null;
+    showToast('✓ Aporte salvo!');
+    carregarAportes();
+  }catch{showToast('Erro ao salvar.','var(--danger)');}
+}
+
+async function excluirAporte(id){
+  if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}
+  if(!confirm('Excluir este aporte?'))return;
+  try{
+    await fetch(API+'/aportes/'+id,{method:'DELETE',...auth()});
+    showToast('Aporte excluído.');
+    carregarAportes();
+  }catch{showToast('Erro.','var(--danger)');}
 }
  /* ===== HELPERS ===== */
 function badgePerfil(p){const m={admin:'badge-purple',atendente:'badge-blue',financeiro:'badge-yellow'};const l={admin:'Admin',atendente:'Atendente',financeiro:'Financeiro'};return`<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;}
