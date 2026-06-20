@@ -6,6 +6,7 @@ from modelos.locacao import Locacao
 from modelos.parcela import Parcela
 from modelos.financiamento import Financiamento
 from modelos.despesa import Despesa
+from modelos.aporte import Aporte
 from modelos.seguranca import verificar_token
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
@@ -41,6 +42,22 @@ def contas_do_mes(mes: str = None, db: Session = Depends(get_db), usuario=Depend
             "valor": p.valor,
             "valor_pago": p.valor_pago or 0,
             "status": p.status
+        })
+
+    aportes_mes = db.query(Aporte).filter(
+        Aporte.data >= inicio_mes,
+        Aporte.data <= fim_mes
+    ).all()
+    for a in aportes_mes:
+        a_receber.append({
+            "id": a.id,
+            "tipo": "aporte",
+            "descricao": f"💰 {a.descricao}",
+            "cliente_id": None,
+            "vencimento": a.data.isoformat(),
+            "valor": a.valor,
+            "valor_pago": a.valor,
+            "status": "pago"
         })
 
     a_pagar_fin = []
@@ -109,11 +126,16 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
         else:
             fim = date(ano, m + 1, 1) - timedelta(days=1)
 
-        receita = db.query(func.sum(Parcela.valor_pago)).filter(
+        receita_loc = db.query(func.sum(Parcela.valor_pago)).filter(
             Parcela.data_pagamento >= inicio,
             Parcela.data_pagamento <= fim,
             Parcela.status.in_(["pago", "parcial"])
         ).scalar() or 0
+        aportes_mes = db.query(func.sum(Aporte.valor)).filter(
+            Aporte.data >= inicio,
+            Aporte.data <= fim
+        ).scalar() or 0
+        receita = receita_loc + aportes_mes
 
         despesas = db.query(func.sum(Despesa.valor)).filter(
             Despesa.data >= inicio,
@@ -143,7 +165,6 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
 def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     hoje = date.today()
 
-    # Calcula média de despesas dos últimos 3 meses
     total_desp_3m = 0
     meses_com_despesa = 0
     for i in range(1, 4):
