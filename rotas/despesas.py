@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from modelos.database import get_db
@@ -32,7 +32,7 @@ def criar_despesa(dados: DespesaCreate, db: Session = Depends(get_db), usuario=D
     if dados.veiculo_id:
         veiculo = db.query(Veiculo).filter(Veiculo.id == dados.veiculo_id).first()
         if not veiculo:
-            raise HTTPException(status_code=404, detail="Veículo não encontrado")
+            raise HTTPException(status_code=404, detail="Veiculo nao encontrado")
     parcelas = dados.parcelas or 1
     valor_parcela = round(dados.valor / parcelas, 2)
     ids = []
@@ -55,8 +55,15 @@ def criar_despesa(dados: DespesaCreate, db: Session = Depends(get_db), usuario=D
     return {"mensagem": f"Despesa registrada em {parcelas} parcela(s)", "ids": ids}
 
 @router.get("/")
-def listar_despesas(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
-    despesas = db.query(Despesa).order_by(Despesa.data.desc()).all()
+def listar_despesas(mes: Optional[str] = Query(None), db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    query = db.query(Despesa)
+    if mes:
+        ano, m = mes.split("-")
+        query = query.filter(
+            func.extract('year', Despesa.data) == int(ano),
+            func.extract('month', Despesa.data) == int(m)
+        )
+    despesas = query.order_by(Despesa.data.desc()).all()
     resultado = []
     for d in despesas:
         resultado.append({
@@ -124,7 +131,7 @@ def relatorio_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verific
 def deletar_despesa(despesa_id: int, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     d = db.query(Despesa).filter(Despesa.id == despesa_id).first()
     if not d:
-        raise HTTPException(status_code=404, detail="Despesa não encontrada")
+        raise HTTPException(status_code=404, detail="Despesa nao encontrada")
     db.delete(d)
     db.commit()
     return {"mensagem": "Despesa removida com sucesso"}
