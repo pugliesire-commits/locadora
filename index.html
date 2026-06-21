@@ -1127,8 +1127,6 @@ async function carregarTabsRecebimentos(){
 }
 
 async function verParcelasLocacao(locacaoId, el){
-  document.querySelectorAll('#tabs-locacoes-receb .tab-btn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
   locacaoSelecionada=locacaoId;
   const area=document.getElementById('area-recebimentos');
   area.innerHTML='<div class="empty-state">Carregando...</div>';
@@ -1217,8 +1215,7 @@ async function confirmarRecebimento(){
     if(!res.ok)throw new Error();
     fecharModal('modal-receber-parcela');
     showToast('✓ Recebimento registrado!');
-    const tabAtiva=document.querySelector('#tabs-locacoes-receb .tab-btn.active');
-    if(tabAtiva)tabAtiva.click();
+    carregarTabsRecebimentos();
     carregarDashboard();
   }catch{showToast('Erro ao registrar.','var(--danger)');}
 }
