@@ -151,8 +151,8 @@
     <div class="login-logo">LOCA<span>+</span>CAR</div>
     <div class="login-sub">Painel de Gestão Interno</div>
     <div class="error-msg" id="login-error">E-mail ou senha incorretos.</div>
-    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com"/></div>
-    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••" onkeydown="if(event.key==='Enter')fazerLogin()"/></div>
+    <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" autocomplete="username"/></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"/></div>
     <button class="btn-primary" onclick="fazerLogin()">ENTRAR</button>
   </div>
 </div>
