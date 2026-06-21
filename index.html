@@ -1152,7 +1152,9 @@ async function verParcelasLocacao(locacaoId, el){
   locacaoSelecionada=locacaoId;
   document.querySelectorAll('[id^="page-"]').forEach(p=>p.style.display='none');
   document.getElementById('page-parcelas').style.display='block';
-  document.getElementById('topbar-title').textContent='Parcelas — Locação #'+locacaoId;
+  const loc=locacoesCache.find(l=>l.id===locacaoId)||{};
+  const cliNome=clientesCache.find(c=>c.id===loc.cliente_id)?.nome||'Locação #'+locacaoId;
+  document.getElementById('topbar-title').textContent='Parcelas — '+cliNome;
   const area=document.getElementById('area-parcelas-detalhe');
   area.innerHTML='<div class="empty-state">Carregando...</div>';
   try{
@@ -1202,6 +1204,7 @@ function voltarRecebimentos(){
   document.getElementById('topbar-title').textContent='Recebimentos';
   const navItem=document.querySelector('.nav-item[onclick*="recebimentos"]');
   if(navItem){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navItem.classList.add('active');}
+  carregarTabsRecebimentos();
 }
 
 function badgeParcela(status, vencida){
