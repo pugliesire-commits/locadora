@@ -117,14 +117,25 @@ def desativar_investidor(investidor_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Status do investidor alterado!"}
 
-# ---------- Pré-cálculo automático ----------
+@router.delete("/{investidor_id}/excluir")
+def excluir_investidor_permanente(investidor_id: int, db: Session = Depends(get_db)):
+    inv = db.query(Investidor).filter(Investidor.id == investidor_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Investidor não encontrado")
+    db.query(LancamentoInvestidor).filter(LancamentoInvestidor.investidor_id == investidor_id).delete()
+    db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).update({"investidor_id": None})
+    db.delete(inv)
+    db.commit()
+    return {"mensagem": "Investidor excluido permanentemente!"}
+
+# ---------- Pre-calculo automatico ----------
 
 @router.get("/precalculo/{veiculo_id}/{mes_referencia}")
 def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = Depends(get_db)):
     try:
         ano, mes = int(mes_referencia.split("-")[0]), int(mes_referencia.split("-")[1])
     except:
-        raise HTTPException(status_code=400, detail="Formato inválido. Use YYYY-MM")
+        raise HTTPException(status_code=400, detail="Formato invalido. Use YYYY-MM")
 
     locacoes = db.query(Locacao).filter(
         Locacao.veiculo_id == veiculo_id,
@@ -160,7 +171,7 @@ def precalculo_lancamento(veiculo_id: int, mes_referencia: str, db: Session = De
         "total_despesas_registradas": len(despesas)
     }
 
-# ---------- Lançamentos ----------
+# ---------- Lancamentos ----------
 
 @router.post("/lancamentos/novo")
 def criar_lancamento(dados: LancamentoCreate, db: Session = Depends(get_db)):
@@ -187,13 +198,13 @@ def criar_lancamento(dados: LancamentoCreate, db: Session = Depends(get_db)):
     db.add(novo)
     db.commit()
     db.refresh(novo)
-    return {"mensagem": "Lançamento registrado!", "id": novo.id, "lucro_liquido": lucro, "valor_comissao": comissao}
+    return {"mensagem": "Lancamento registrado!", "id": novo.id, "lucro_liquido": lucro, "valor_comissao": comissao}
 
 @router.put("/lancamentos/{lancamento_id}")
 def editar_lancamento(lancamento_id: int, dados: LancamentoUpdate, db: Session = Depends(get_db)):
     lanc = db.query(LancamentoInvestidor).filter(LancamentoInvestidor.id == lancamento_id).first()
     if not lanc:
-        raise HTTPException(status_code=404, detail="Lançamento não encontrado")
+        raise HTTPException(status_code=404, detail="Lancamento não encontrado")
     inv = db.query(Investidor).filter(Investidor.id == lanc.investidor_id).first()
     lucro = dados.receita_total + dados.aportes - dados.despesas_total - dados.parcelas_financiamento
     comissao = lucro * (inv.percentual_comissao / 100) if lucro > 0 else 0.0
@@ -205,16 +216,16 @@ def editar_lancamento(lancamento_id: int, dados: LancamentoUpdate, db: Session =
     lanc.valor_comissao = comissao
     lanc.observacao = dados.observacao
     db.commit()
-    return {"mensagem": "Lançamento atualizado!", "lucro_liquido": lucro, "valor_comissao": comissao}
+    return {"mensagem": "Lancamento atualizado!", "lucro_liquido": lucro, "valor_comissao": comissao}
 
 @router.delete("/lancamentos/{lancamento_id}")
 def excluir_lancamento(lancamento_id: int, db: Session = Depends(get_db)):
     lanc = db.query(LancamentoInvestidor).filter(LancamentoInvestidor.id == lancamento_id).first()
     if not lanc:
-        raise HTTPException(status_code=404, detail="Lançamento não encontrado")
+        raise HTTPException(status_code=404, detail="Lancamento não encontrado")
     db.delete(lanc)
     db.commit()
-    return {"mensagem": "Lançamento excluído!"}
+    return {"mensagem": "Lancamento excluido!"}
 
 # ---------- Extrato detalhado ----------
 
@@ -258,11 +269,10 @@ def extrato_investidor(investidor_id: int, db: Session = Depends(get_db)):
         ]
     }
 
-# ---------- Extrato CONSOLIDADO por mês ----------
+# ---------- Extrato CONSOLIDADO por mes ----------
 
 @router.get("/{investidor_id}/extrato-consolidado")
 def extrato_consolidado(investidor_id: int, db: Session = Depends(get_db)):
-    """Agrupa lançamentos por mês+veículo e consolida os totais."""
     inv = db.query(Investidor).filter(Investidor.id == investidor_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Investidor não encontrado")
@@ -271,7 +281,6 @@ def extrato_consolidado(investidor_id: int, db: Session = Depends(get_db)):
         LancamentoInvestidor.investidor_id == investidor_id
     ).order_by(LancamentoInvestidor.mes_referencia.desc()).all()
 
-    # Agrupa por mês + veículo
     grupos = {}
     for l in lancamentos:
         chave = f"{l.mes_referencia}|{l.veiculo_id}"
@@ -306,7 +315,6 @@ def extrato_consolidado(investidor_id: int, db: Session = Depends(get_db)):
             "observacao": l.observacao
         })
 
-    # Recalcula lucro e comissão consolidados
     consolidados = []
     for g in grupos.values():
         lucro = g["receita_total"] + g["aportes"] - g["despesas_total"] - g["parcelas_financiamento"]
