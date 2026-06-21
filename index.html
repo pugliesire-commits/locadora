@@ -1269,7 +1269,11 @@ const body={forma_pagamento:document.getElementById('r-forma').value,valor_pago:
     if(!res.ok)throw new Error();
     fecharModal('modal-receber-parcela');
     showToast('✓ Recebimento registrado!');
-    carregarTabsRecebimentos();
+    if(locacaoSelecionada&&document.getElementById('page-parcelas').style.display!=='none'){
+      verParcelasLocacao(locacaoSelecionada,null);
+    }else{
+      carregarTabsRecebimentos();
+    }
     carregarDashboard();
   }catch{showToast('Erro ao registrar.','var(--danger)');}
 }
