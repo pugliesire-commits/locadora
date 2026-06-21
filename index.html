@@ -263,6 +263,11 @@
 
         <!-- RECEBIMENTOS -->
 <div id="page-recebimentos" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <label style="color:var(--gray);font-size:13px">Mês:</label>
+    <input type="month" id="filtro-mes-recebimentos" class="select-input" style="width:180px" onchange="carregarTabsRecebimentos()"/>
+    <button class="btn-cancel" onclick="document.getElementById('filtro-mes-recebimentos').value='';carregarTabsRecebimentos()">Todos</button>
+  </div>
   <div class="table-card" style="margin-bottom:20px">
     <table>
       <thead>
@@ -849,7 +854,10 @@ function mostrarPagina(nome, el) {
   if (nome === 'veiculos') carregarVeiculos();
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
-  else if (nome === 'recebimentos') carregarTabsRecebimentos();
+  else if (nome === 'recebimentos') {
+    document.getElementById('filtro-mes-recebimentos').value=new Date().toISOString().slice(0,7);
+    carregarTabsRecebimentos();
+  }
   else if (nome === 'financiamentos') carregarFinanciamentos();
   else if (nome === 'despesas') {document.getElementById('filtro-mes-despesas').value=new Date().toISOString().slice(0,7);carregarDespesas();}
   else if (nome === 'indicadores') carregarIndicadores();
@@ -1095,9 +1103,15 @@ async function carregarTabsRecebimentos(){
     clientesCache=await rc.json();
     const cliMap={};clientesCache.forEach(c=>cliMap[c.id]=c.nome);
     const tbody=document.getElementById('tabela-locacoes-receb');
-    if(!locacoesCache.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}
-    const resumos=await Promise.all(locacoesCache.map(l=>fetch(API+'/parcelas/locacao/'+l.id+'/resumo',auth()).then(r=>r.ok?r.json():{valor_pago:0,valor_pendente:0}).catch(()=>({valor_pago:0,valor_pendente:0}))));
-    tbody.innerHTML=locacoesCache.map((l,i)=>{
+    const filtroMes=document.getElementById('filtro-mes-recebimentos')?.value;
+    const locacoesFiltradas=filtroMes?locacoesCache.filter(l=>{
+      const ini=l.data_inicio?.slice(0,7);
+      const fim=l.data_fim?.slice(0,7);
+      return ini<=filtroMes&&fim>=filtroMes;
+    }):locacoesCache;
+    if(!locacoesFiltradas.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}
+    const resumos=await Promise.all(locacoesFiltradas.map(l=>fetch(API+'/parcelas/locacao/'+l.id+'/resumo',auth()).then(r=>r.ok?r.json():{valor_pago:0,valor_pendente:0}).catch(()=>({valor_pago:0,valor_pendente:0}))));
+    tbody.innerHTML=locacoesFiltradas.map((l,i)=>{
       const r=resumos[i];
       const pago=r.valor_pago||0;
       const pendente=r.valor_pendente||0;
