@@ -1413,9 +1413,9 @@ async function salvarLancamento(){
 async function carregarTabsExtrato(){try{const res=await fetch(API+'/investidores/',auth());const lista=await res.json();investidoresCache=lista;const tabs=document.getElementById('tabs-investidores-extrato');tabs.innerHTML='<span style="color:var(--gray);font-size:13px;padding:7px 4px">Selecione:</span>'+lista.map(inv=>`<button class="tab-btn" onclick="verExtratoAutomatico(${inv.id},this)">${inv.nome}</button>`).join('');document.getElementById('tabs-modo-extrato').style.display='none';document.getElementById('area-extrato-conteudo').innerHTML='<div class="empty-state">Selecione um investidor acima.</div>';}catch{}}
 function alternarModoExtrato(modo,el){modoExtratoAtual=modo;document.querySelectorAll('#tabs-modo-extrato .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(extratoInvestidorAtual){verExtratoAutomatico(extratoInvestidorAtual.investidorId,document.querySelector('#tabs-investidores-extrato .tab-btn.active'));}}
 async function verExtratoAutomatico(investidorId,el){
-  if(el){document.querySelectorAll('#tabs-investidores-extrato .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+  if(!investidorId)return;
+  try{document.querySelectorAll('#tabs-investidores-extrato .tab-btn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');}catch{}
   extratoInvestidorAtual={investidorId};
-  document.getElementById('tabs-modo-extrato').style.display='none';
   const mes=document.getElementById('filtro-mes-extrato')?.value||'';
   const url=API+'/investidores/'+investidorId+'/extrato-automatico'+(mes?'?mes='+mes:'');
   document.getElementById('area-extrato-conteudo').innerHTML='<div class="empty-state">Carregando...</div>';
