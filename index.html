@@ -175,9 +175,9 @@
         <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
         <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
         <div class="nav-item" onclick="mostrarPagina('indicadores',this)">&#9670; Indicadores</div>
-       <div class="nav-section">RELATÓRIOS</div>
 <div class="nav-item" onclick="mostrarPagina('aportes',this)">💰 Aportes</div>
-<div class="nav-item" onclick="mostrarPagina('relatorio',this)">📊 Fluxo & DRE</div> 
+      <div class="nav-section">RELATÓRIOS</div>
+<div class="nav-item" onclick="mostrarPagina('relatorio',this)">📊 Fluxo & DRE</div>
        <div class="nav-section">INVESTIDORES</div>
         <div class="nav-item" onclick="mostrarPagina('investidores',this)">&#9670; Investidores</div>
         <div class="nav-item" onclick="mostrarPagina('extrato',this)">&#9632; Extrato Mensal</div>
@@ -947,7 +947,9 @@ async function carregarDashboard() {
     const tbody=document.getElementById('dash-locacoes');
     const recentes=locacoes.slice(-5).reverse();
     if(!recentes.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma locação.</td></tr>';return;}
-    tbody.innerHTML=recentes.map(l=>`<tr><td>${l.cliente_id}</td><td>${l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td></tr>`).join('');
+   const cliMapDash={};(await fetch(API+'/clientes/',auth()).then(r=>r.json())).forEach(c=>cliMapDash[c.id]=c.nome);
+const veiMapDash={};(await fetch(API+'/veiculos/',auth()).then(r=>r.json())).forEach(v=>veiMapDash[v.id]=v.placa);
+tbody.innerHTML=recentes.map(l=>`<tr><td><strong>${cliMapDash[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapDash[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td></tr>`).join('');
   } catch(e){console.error(e);}
 }
 
@@ -1005,12 +1007,16 @@ async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.'
 /* ===== LOCAÇÕES ===== */
 async function carregarLocacoes(){
   try{
-    const res=await fetch(API+'/locacoes/',auth());
-    locacoesCache=await res.json();
+    const[rl,rc,rv]=await Promise.all([fetch(API+'/locacoes/',auth()),fetch(API+'/clientes/',auth()),fetch(API+'/veiculos/',auth())]);
+    locacoesCache=await rl.json();
+    clientesCache=await rc.json();
+    veiculosCache=await rv.json();
     const tbody=document.getElementById('tabela-locacoes');
     if(!locacoesCache.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">Nenhuma locação.</td></tr>';return;}
-    tbody.innerHTML=locacoesCache.map(l=>`<tr>
-      <td>#${l.id}</td><td>${l.cliente_id}</td><td>${l.veiculo_id}</td>
+    const cliMapLoc={};clientesCache.forEach(c=>cliMapLoc[c.id]=c.nome);
+const veiMapLoc={};veiculosCache.forEach(v=>veiMapLoc[v.id]=v.placa+' '+v.marca+' '+v.modelo);
+tbody.innerHTML=locacoesCache.map(l=>`<tr>
+      <td>#${l.id}</td><td><strong>${cliMapLoc[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapLoc[l.veiculo_id]||'Veículo '+l.veiculo_id}</td>
       <td>${badgePeriodo(l.periodo)}</td>
       <td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td>
       <td>R$ ${l.valor_periodo?.toFixed(2)||'—'}</td>
