@@ -446,6 +446,14 @@
     <tbody id="tabela-aportes"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody></table>
   </div>
 </div>
+       <!-- PARCELAS DETALHE -->
+        <div id="page-parcelas" style="display:none">
+          <div style="margin-bottom:20px">
+            <button class="btn-cancel" onclick="voltarRecebimentos()">← Voltar para Recebimentos</button>
+          </div>
+          <div id="area-parcelas-detalhe"></div>
+        </div>
+
        <!-- INVESTIDORES -->
         <div id="page-investidores" style="display:none">
           <div id="lista-investidores"><div class="empty-state">Carregando...</div></div>
@@ -1105,8 +1113,8 @@ async function carregarTabsRecebimentos(){
     const tbody=document.getElementById('tabela-locacoes-receb');
     const filtroMes=document.getElementById('filtro-mes-recebimentos')?.value;
     const locacoesFiltradas=filtroMes?locacoesCache.filter(l=>{
-      const ini=l.data_inicio?.slice(0,7);
-      const fim=l.data_fim?.slice(0,7);
+      const ini=l.data_inicio?.slice(0,7)||'';
+      const fim=l.data_fim?.slice(0,7)||'9999-12';
       return ini<=filtroMes&&fim>=filtroMes;
     }):locacoesCache;
     if(!locacoesFiltradas.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}
@@ -1142,7 +1150,10 @@ async function carregarTabsRecebimentos(){
 
 async function verParcelasLocacao(locacaoId, el){
   locacaoSelecionada=locacaoId;
-  const area=document.getElementById('area-recebimentos');
+  document.querySelectorAll('[id^="page-"]').forEach(p=>p.style.display='none');
+  document.getElementById('page-parcelas').style.display='block';
+  document.getElementById('topbar-title').textContent='Parcelas — Locação #'+locacaoId;
+  const area=document.getElementById('area-parcelas-detalhe');
   area.innerHTML='<div class="empty-state">Carregando...</div>';
   try{
     const[rp,rr]=await Promise.all([
@@ -1185,7 +1196,16 @@ async function verParcelasLocacao(locacaoId, el){
   }catch(e){area.innerHTML='<div class="empty-state">Erro ao carregar parcelas.</div>';console.error(e);}
 }
 
+function voltarRecebimentos(){
+  document.querySelectorAll('[id^="page-"]').forEach(p=>p.style.display='none');
+  document.getElementById('page-recebimentos').style.display='block';
+  document.getElementById('topbar-title').textContent='Recebimentos';
+  const navItem=document.querySelector('.nav-item[onclick*="recebimentos"]');
+  if(navItem){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navItem.classList.add('active');}
+}
+
 function badgeParcela(status, vencida){
+ function badgeParcela(status, vencida){
   if(status==='pago') return '<span class="badge badge-green">✓ Pago</span>';
   if(status==='parcial') return '<span class="badge badge-yellow">Parcial</span>';
   if(vencida) return '<span class="badge badge-red">⚠️ Vencida</span>';
