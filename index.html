@@ -1261,7 +1261,8 @@ document.getElementById('modal-receber-parcela').classList.add('open');
 }
 
 async function confirmarRecebimento(){
-  const body={forma_pagamento:document.getElementById('r-forma').value,valor_pago:parseFloat(document.getElementById('r-valor').value)||0,observacao:document.getElementById('r-obs').value,data_pagamento:document.getElementById('r-data-pagamento').value||null};
+  const dataPag=document.getElementById('r-data-pagamento').value;
+const body={forma_pagamento:document.getElementById('r-forma').value,valor_pago:parseFloat(document.getElementById('r-valor').value)||0,observacao:document.getElementById('r-obs').value,data_pagamento:dataPag?dataPag:null};
   if(!body.valor_pago){showToast('Digite o valor recebido.','var(--warning)');return;}
   try{
     const res=await fetch(API+'/parcelas/'+parcelaSelecionadaId+'/'+(modoEdicaoParcela?'editar':'pagar'),{method:'PUT',body:JSON.stringify(body),...auth()});
