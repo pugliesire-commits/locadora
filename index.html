@@ -1166,6 +1166,7 @@ async function verParcelasLocacao(locacaoId, el){
     const resumo=rr.ok?await rr.json():{};
     const locacao=locacoesCache.find(l=>l.id===locacaoId)||{};
     const hoje=new Date().toISOString().split('T')[0];
+    const filtroMesParcelas=document.getElementById('filtro-mes-recebimentos')?.value;
 
     area.innerHTML=`
       <div class="receb-resumo">
@@ -1176,7 +1177,10 @@ async function verParcelasLocacao(locacaoId, el){
       </div>
       <div id="lista-parcelas">
         ${parcelas.length===0?'<div class="empty-state">Nenhuma parcela encontrada.</div>':
-        parcelas.map(p=>{
+        parcelas.filter(p=>{
+          if(!filtroMesParcelas) return true;
+          return p.data_vencimento?.slice(0,7)===filtroMesParcelas;
+        }).map(p=>{
           const vencida=p.status!=='pago'&&p.data_vencimento<hoje;
           const cls=p.status==='pago'?'pago':vencida?'vencido':p.status==='parcial'?'parcial':'';
           const faltaPagar=Math.max(0,(p.valor||0)-(p.valor_pago||0));
