@@ -1168,12 +1168,25 @@ async function verParcelasLocacao(locacaoId, el){
     const hoje=new Date().toISOString().split('T')[0];
     const filtroMesParcelas=document.getElementById('filtro-mes-recebimentos')?.value;
 
+    const parcelasMes=parcelas.filter(p=>!filtroMesParcelas||p.data_vencimento?.slice(0,7)===filtroMesParcelas);
+    const totalMes=parcelasMes.reduce((s,p)=>s+(p.valor||0),0);
+    const recebidoMes=parcelasMes.reduce((s,p)=>s+(p.valor_pago||0),0);
+    const pendenteMes=parcelasMes.reduce((s,p)=>s+Math.max(0,(p.valor||0)-(p.valor_pago||0)),0);
+    const pagasMes=parcelasMes.filter(p=>p.status==='pago').length;
+    const pendentesMes=parcelasMes.filter(p=>p.status!=='pago').length;
+    const labelMes=filtroMesParcelas?(' — '+filtroMesParcelas.split('-').reverse().join('/')):'';
     area.innerHTML=`
+      <div style="background:var(--darker);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--gray)">
+        📅 Mês${labelMes} &nbsp;|&nbsp;
+        <span style="color:var(--white)">Total: <strong style="color:var(--white)">R$ ${totalMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></span> &nbsp;|&nbsp;
+        <span style="color:var(--green)">✓ Recebido: <strong>R$ ${recebidoMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></span> &nbsp;|&nbsp;
+        <span style="color:var(--warning)">⏳ Pendente: <strong>R$ ${pendenteMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></span>
+      </div>
       <div class="receb-resumo">
-        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--green)">R$ ${(resumo.valor_pago||0).toFixed(2)}</div><div class="receb-stat-label">Recebido</div></div>
-        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--warning)">R$ ${(resumo.valor_pendente||0).toFixed(2)}</div><div class="receb-stat-label">Pendente</div></div>
-        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--green)">${resumo.pagas||0}</div><div class="receb-stat-label">Pagas</div></div>
-        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--warning)">${resumo.pendentes||0}</div><div class="receb-stat-label">Pendentes</div></div>
+        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--green)">R$ ${recebidoMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="receb-stat-label">Recebido no Mês</div></div>
+        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--warning)">R$ ${pendenteMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="receb-stat-label">Pendente no Mês</div></div>
+        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--green)">${pagasMes}</div><div class="receb-stat-label">Pagas no Mês</div></div>
+        <div class="receb-stat"><div class="receb-stat-val" style="color:var(--warning)">${pendentesMes}</div><div class="receb-stat-label">Pendentes no Mês</div></div>
       </div>
       <div id="lista-parcelas">
         ${parcelas.length===0?'<div class="empty-state">Nenhuma parcela encontrada.</div>':
