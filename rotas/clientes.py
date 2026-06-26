@@ -16,7 +16,12 @@ class ClienteSchema(BaseModel):
     cnh_cat: Optional[str] = None
     telefone: Optional[str] = None
     email: Optional[str] = None
+    estado_civil: Optional[str] = None
     endereco: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
 
 @router.get("/")
 def listar_clientes(db: Session = Depends(get_db)):
@@ -34,14 +39,14 @@ def cadastrar_cliente(cliente: ClienteSchema, db: Session = Depends(get_db)):
 def buscar_cliente(id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == id).first()
     if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
     return cliente
 
 @router.put("/{id}")
 def atualizar_cliente(id: int, dados: ClienteSchema, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == id).first()
     if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
     for campo, valor in dados.model_dump().items():
         setattr(cliente, campo, valor)
     db.commit()
@@ -52,14 +57,10 @@ def atualizar_cliente(id: int, dados: ClienteSchema, db: Session = Depends(get_d
 def excluir_cliente(id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == id).first()
     if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-    # Verifica se tem locações vinculadas
+        raise HTTPException(status_code=404, detail="Cliente nao encontrado")
     locacoes = db.query(Locacao).filter(Locacao.cliente_id == id).count()
     if locacoes > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cliente possui {locacoes} locação(ões) vinculada(s). Exclua as locações primeiro."
-        )
+        raise HTTPException(status_code=400, detail=f"Cliente possui {locacoes} locacao(oes) vinculada(s). Exclua as locacoes primeiro.")
     db.delete(cliente)
     db.commit()
-    return {"mensagem": "Cliente excluído com sucesso"}
+    return {"mensagem": "Cliente excluido com sucesso"}
