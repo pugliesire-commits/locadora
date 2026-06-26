@@ -5,7 +5,7 @@ from typing import Optional
 from modelos.database import get_db
 from modelos.veiculo import Veiculo
 
-router = APIRouter(prefix="/veiculos", tags=["Veículos"])
+router = APIRouter(prefix="/veiculos", tags=["Veiculos"])
 
 class VeiculoSchema(BaseModel):
     placa: str
@@ -14,8 +14,11 @@ class VeiculoSchema(BaseModel):
     ano: int
     categoria: str
     cor: Optional[str] = None
+    chassi: Optional[str] = None
+    renavam: Optional[str] = None
+    quilometragem: Optional[float] = 0.0
     valor_diaria: float
-    status: Optional[str] = "Disponível"
+    status: Optional[str] = "Disponivel"
     investidor_id: Optional[int] = None
 
 @router.get("/")
