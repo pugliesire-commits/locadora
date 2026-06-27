@@ -23,6 +23,7 @@ class Locacao(Base):
     locador_assinado       = Column(Boolean, default=False)
     locador_assinado_nome  = Column(String, nullable=True)
     locador_assinado_em    = Column(DateTime, nullable=True)
+    contrato_pdf_html      = Column(String, nullable=True)
     cliente          = relationship("Cliente")
     veiculo          = relationship("Veiculo", back_populates="locacoes")
     pagamentos       = relationship("Pagamento", back_populates="locacao")
