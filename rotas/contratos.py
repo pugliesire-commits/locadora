@@ -8,7 +8,7 @@ from modelos.veiculo import Veiculo
 from modelos.usuario import Usuario
 from datetime import datetime
 from typing import Optional
-import jwt
+from jose import jwt, JWTError
 import os
 
 router = APIRouter(prefix="/contratos", tags=["Contratos"])
