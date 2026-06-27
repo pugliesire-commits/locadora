@@ -307,6 +307,7 @@
             <button class="tab-btn active" onclick="mostrarDespesas('lista',this)">Todas</button>
             <button class="tab-btn" onclick="mostrarDespesas('categoria',this)">📊 Por Categoria</button>
             <button class="tab-btn" onclick="mostrarDespesas('veiculo',this)">🚗 Por Veículo</button>
+            <button class="tab-btn" onclick="mostrarDespesas('placa',this)">🔍 Por Placa</button>
           </div>
          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><label style="color:var(--gray);font-size:13px">Mês:</label><input type="month" id="filtro-mes-despesas" class="select-input" style="width:180px" onchange="carregarDespesas()"/><button class="btn-cancel" onclick="document.getElementById('filtro-mes-despesas').value='';carregarDespesas()">Todos</button></div> 
          <div id="area-despesas-lista">
@@ -327,6 +328,7 @@
               <tbody id="tabela-despesas-veiculo"></tbody></table>
             </div>
           </div>
+          <div id="area-despesas-placa" style="display:none"></div>
         </div>
 
         <!-- INDICADORES -->
@@ -1379,7 +1381,61 @@ async function excluirFinanciamento(id){if(!podeExcluir()){showToast('Sem permis
 /* ===== DESPESAS ===== */
 async function carregarDespesas(){try{const mes=document.getElementById('filtro-mes-despesas')?.value;const url=mes?API+'/despesas/?mes='+mes:API+'/despesas/';const res=await fetch(url,auth());despesasCache=await res.json();renderDespesas(despesasCache);}catch{}}
 function renderDespesas(lista){document.getElementById('area-despesas-lista').style.display='block';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';const tbody=document.getElementById('tabela-despesas');if(!lista.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma despesa.</td></tr>';return;}tbody.innerHTML=lista.map(d=>`<tr><td>${formatData(d.data)}</td><td>${formatCategoria(d.categoria)}</td><td>${d.descricao}</td><td>${d.placa||'<span style="color:var(--gray)">Geral</span>'}</td><td style="color:var(--danger)">R$ ${d.valor?.toFixed(2)}</td><td>${podeExcluir()?`<button class="action-btn danger" onclick="excluirDespesa(${d.id})">Excluir</button>`:''}</td></tr>`).join('');}
-async function mostrarDespesas(tipo,el){document.querySelectorAll('#page-despesas .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('area-despesas-lista').style.display='none';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';if(tipo==='lista'){document.getElementById('area-despesas-lista').style.display='block';renderDespesas(despesasCache);return;}if(tipo==='categoria'){document.getElementById('area-despesas-categoria').style.display='block';try{const res=await fetch(API+'/despesas/por-categoria',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-categoria');tbody.innerHTML=data.map(d=>`<tr><td>${formatCategoria(d.categoria)}</td><td>${d.quantidade}</td><td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td></tr>`).join('');}catch{}}if(tipo==='veiculo'){document.getElementById('area-despesas-veiculo').style.display='block';try{const res=await fetch(API+'/despesas/por-veiculo',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-veiculo');tbody.innerHTML=data.map(d=>`<tr><td><strong>${d.placa}</strong></td><td>${d.marca} ${d.modelo}</td><td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td><td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td><td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td></tr>`).join('');}catch{}}}
+async function mostrarDespesas(tipo,el){document.querySelectorAll('#page-despesas .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('area-despesas-lista').style.display='none';document.getElementById('area-despesas-categoria').style.display='none';document.getElementById('area-despesas-veiculo').style.display='none';document.getElementById('area-despesas-placa').style.display='none';if(tipo==='lista'){document.getElementById('area-despesas-lista').style.display='block';renderDespesas(despesasCache);return;}if(tipo==='categoria'){document.getElementById('area-despesas-categoria').style.display='block';try{const res=await fetch(API+'/despesas/por-categoria',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-categoria');tbody.innerHTML=data.map(d=>`<tr><td>${formatCategoria(d.categoria)}</td><td>${d.quantidade}</td><td style="color:var(--danger)">R$ ${d.total?.toFixed(2)}</td></tr>`).join('');}catch{}}if(tipo==='veiculo'){document.getElementById('area-despesas-veiculo').style.display='block';try{const res=await fetch(API+'/despesas/por-veiculo',auth());const data=await res.json();const tbody=document.getElementById('tabela-despesas-veiculo');tbody.innerHTML=data.map(d=>`<tr><td><strong>${d.placa}</strong></td><td>${d.marca} ${d.modelo}</td><td style="color:var(--danger)">R$ ${d.total_despesas?.toFixed(2)}</td><td style="color:var(--warning)">R$ ${d.total_parcelas_financiamento?.toFixed(2)}</td><td style="color:var(--danger);font-weight:700">R$ ${d.custo_total?.toFixed(2)}</td></tr>`).join('');}catch{}}if(tipo==='placa'){document.getElementById('area-despesas-placa').style.display='block';await carregarFiltroPorPlaca();}}
+async function carregarFiltroPorPlaca(){
+  try{
+    const[rd,rv]=await Promise.all([fetch(API+'/despesas/por-veiculo',auth()),fetch(API+'/veiculos/',auth())]);
+    const porVeiculo=await rd.json();
+    const veiculos=await rv.json();
+    const veiMap={};veiculos.forEach(v=>veiMap[v.id]={placa:v.placa,marca:v.marca,modelo:v.modelo,investidor_id:v.investidor_id});
+    const div=document.getElementById('area-despesas-placa');
+    const placasHtml=porVeiculo.map(d=>`<label style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--darker);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border 0.15s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+      <input type="checkbox" class="chk-placa" value="${d.placa}" data-despesas="${d.total_despesas||0}" data-parcelas="${d.total_parcelas_financiamento||0}" data-custo="${d.custo_total||0}" data-investidor="${veiculos.find(v=>v.placa===d.placa)?.investidor_id||''}" onchange="recalcularSomaPlacas()" style="accent-color:var(--green);width:16px;height:16px"/>
+      <span style="font-weight:700;color:var(--white)">${d.placa}</span>
+      <span style="color:var(--gray);font-size:12px">${d.marca} ${d.modelo}</span>
+      <span style="margin-left:auto;color:var(--danger);font-size:12px;font-weight:600">R$ ${(d.custo_total||0).toFixed(2)}</span>
+    </label>`).join('');
+    div.innerHTML=`
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="tab-btn" onclick="selecionarGrupoPlacas('todas')">✅ Todas</button>
+        <button class="tab-btn" onclick="selecionarGrupoPlacas('propria')">🚗 Frota Própria</button>
+        <button class="tab-btn" onclick="selecionarGrupoPlacas('investidor')">👥 Investidor</button>
+        <button class="tab-btn" onclick="selecionarGrupoPlacas('nenhuma')">✖ Limpar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;margin-bottom:16px">${placasHtml}</div>
+      <div id="soma-placas" style="background:var(--darker);border:1px solid var(--green);border-radius:10px;padding:16px 20px;display:none">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Resumo das placas selecionadas</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--danger)" id="soma-desp">R$ 0,00</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Despesas Operacionais</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--warning)" id="soma-parc">R$ 0,00</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Parcelas Financiamento</div></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--white)" id="soma-custo">R$ 0,00</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Custo Total</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--gray);text-align:center" id="soma-label"></div>
+      </div>`;
+  }catch(e){console.error(e);}
+}
+function recalcularSomaPlacas(){
+  const checks=document.querySelectorAll('.chk-placa:checked');
+  const soma=document.getElementById('soma-placas');
+  if(!checks.length){soma.style.display='none';return;}
+  let d=0,p=0,c=0;
+  checks.forEach(ch=>{d+=parseFloat(ch.dataset.despesas)||0;p+=parseFloat(ch.dataset.parcelas)||0;c+=parseFloat(ch.dataset.custo)||0;});
+  document.getElementById('soma-desp').textContent='R$ '+d.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('soma-parc').textContent='R$ '+p.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('soma-custo').textContent='R$ '+c.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('soma-label').textContent=checks.length+' placa(s) selecionada(s)';
+  soma.style.display='block';
+}
+function selecionarGrupoPlacas(grupo){
+  const checks=document.querySelectorAll('.chk-placa');
+  checks.forEach(ch=>{
+    if(grupo==='todas') ch.checked=true;
+    else if(grupo==='nenhuma') ch.checked=false;
+    else if(grupo==='propria') ch.checked=!ch.dataset.investidor;
+    else if(grupo==='investidor') ch.checked=!!ch.dataset.investidor;
+  });
+  recalcularSomaPlacas();
+}
 async function carregarSelectsDespesa(){const res=await fetch(API+'/veiculos/',auth());const veiculos=await res.json();document.getElementById('d-veiculo').innerHTML='<option value="">Nenhum (despesa geral)</option>'+veiculos.map(v=>`<option value="${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');document.getElementById('d-data').value=new Date().toISOString().split('T')[0];}
 async function salvarDespesa(){const veiculoId=document.getElementById('d-veiculo').value;const body={categoria:document.getElementById('d-categoria').value,descricao:document.getElementById('d-descricao').value,valor:parseFloat(document.getElementById('d-valor').value)||0,data:document.getElementById('d-data').value,veiculo_id:veiculoId?parseInt(veiculoId):null,parcelas:parseInt(document.getElementById('d-parcelas').value)||1};if(!body.descricao||!body.valor||!body.data){showToast('Preencha todos os campos.','var(--warning)');return;}try{const res=await fetch(API+'/despesas/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-despesa');showToast('✓ Despesa registrada!');carregarDespesas();}catch{showToast('Erro.','var(--danger)');}}
 async function excluirDespesa(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/despesas/'+id,{method:'DELETE',...auth()});showToast('Despesa excluída.');carregarDespesas();}catch{showToast('Erro.','var(--danger)');}}
