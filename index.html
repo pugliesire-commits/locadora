@@ -836,6 +836,7 @@ async function fazerLogin() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     TOKEN = data.access_token;
+    localStorage.setItem('locacar_token', TOKEN);
     const me = await fetch(API + '/auth/eu', { headers: { Authorization: 'Bearer ' + TOKEN } });
     if (me.ok) {
       const user = await me.json();
