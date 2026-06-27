@@ -975,6 +975,47 @@ function fecharModal(id) { document.getElementById(id).classList.remove('open');
 /* ===== DASHBOARD ===== */
 async function carregarDashboard() {
   try {
+    const res = await fetch(API + '/indicadores/dashboard-frota', auth());
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const div = document.getElementById('page-dashboard');
+
+    function renderBloco(titulo, icone, cor, d) {
+      return `
+        <div style="margin-bottom:32px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${cor}44">
+            <span style="font-size:20px">${icone}</span>
+            <span style="font-size:15px;font-weight:700;color:${cor}">${titulo}</span>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Veículos</div><div class="stat-value accent">${d.total_veiculos}</div></div>
+            <div class="stat-card"><div class="stat-label">Disponíveis</div><div class="stat-value accent">${d.disponiveis}</div></div>
+            <div class="stat-card"><div class="stat-label">Locações Ativas</div><div class="stat-value accent">${d.locacoes_ativas}</div></div>
+            <div class="stat-card"><div class="stat-label">Recebimentos Pendentes</div><div class="stat-value" style="color:var(--warning)">${d.parcelas_pendentes}</div></div>
+          </div>
+          <div class="stats-grid" style="margin-top:-14px">
+            <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value accent">R$ ${d.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+            <div class="stat-card"><div class="stat-label">Despesas do Mês</div><div class="stat-value" style="color:var(--danger)">R$ ${d.despesas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+            <div class="stat-card"><div class="stat-label">Valor em Aberto</div><div class="stat-value" style="color:var(--warning)">R$ ${d.valor_em_aberto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+            <div class="stat-card"><div class="stat-label">Parcelas do Mês</div><div class="stat-value" style="color:var(--info)">R$ ${d.parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          </div>
+          <div class="stats-grid" style="margin-top:-14px">
+            <div class="stat-card"><div class="stat-label">Financiamentos Ativos</div><div class="stat-value" style="color:var(--warning)">${d.financiamentos_ativos}</div></div>
+            <div class="stat-card"><div class="stat-label">Veículos Quitados</div><div class="stat-value accent">${d.financiamentos_quitados}</div></div>
+            <div class="stat-card"><div class="stat-label">Total Despesas Geral</div><div class="stat-value" style="color:var(--danger)">R$ ${d.total_despesas_geral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+            <div class="stat-card"><div class="stat-label">Valor em Aberto</div><div class="stat-value" style="color:var(--warning)">R$ ${d.valor_em_aberto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          </div>
+        </div>`;
+    }
+
+    let html = renderBloco('FROTA PRÓPRIA', '🚗', '#9eff1f', data.propria);
+    for (const inv of data.investidores) {
+      html += renderBloco(`${inv.investidor_nome} — ${inv.investidor_comissao}% comissão`, '👥', '#378ADD', inv);
+    }
+    div.innerHTML = html;
+  } catch(e) { console.error(e); }
+}
+  try {
     const [rv,rc,rl,rf,rd] = await Promise.all([
       fetch(API+'/veiculos/',auth()), fetch(API+'/clientes/',auth()),
       fetch(API+'/locacoes/',auth()), fetch(API+'/financiamentos/dashboard',auth()),
