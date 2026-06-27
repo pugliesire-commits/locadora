@@ -29,6 +29,7 @@ try:
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado BOOLEAN DEFAULT FALSE;",
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_nome VARCHAR;",
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_em TIMESTAMP;",
+        "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS contrato_pdf_html TEXT;",
     ]
     for _cmd in _cmds:
         try: _cur.execute(_cmd)
