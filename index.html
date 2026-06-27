@@ -990,80 +990,8 @@ async function carregarDashboard() {
     div.innerHTML = html;
   } catch(e) { console.error(e); }
 }
-  try {
-    const res = await fetch(API + '/indicadores/dashboard-frota', auth());
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    const div = document.getElementById('page-dashboard');
 
-    function renderBloco(titulo, icone, cor, d) {
-      return `
-        <div style="margin-bottom:32px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${cor}44">
-            <span style="font-size:20px">${icone}</span>
-            <span style="font-size:15px;font-weight:700;color:${cor}">${titulo}</span>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">Veículos</div><div class="stat-value accent">${d.total_veiculos}</div></div>
-            <div class="stat-card"><div class="stat-label">Disponíveis</div><div class="stat-value accent">${d.disponiveis}</div></div>
-            <div class="stat-card"><div class="stat-label">Locações Ativas</div><div class="stat-value accent">${d.locacoes_ativas}</div></div>
-            <div class="stat-card"><div class="stat-label">Recebimentos Pendentes</div><div class="stat-value" style="color:var(--warning)">${d.parcelas_pendentes}</div></div>
-          </div>
-          <div class="stats-grid" style="margin-top:-14px">
-            <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value accent">R$ ${d.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-            <div class="stat-card"><div class="stat-label">Despesas do Mês</div><div class="stat-value" style="color:var(--danger)">R$ ${d.despesas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-            <div class="stat-card"><div class="stat-label">Valor em Aberto</div><div class="stat-value" style="color:var(--warning)">R$ ${d.valor_em_aberto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-            <div class="stat-card"><div class="stat-label">Parcelas do Mês</div><div class="stat-value" style="color:var(--info)">R$ ${d.parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-          </div>
-          <div class="stats-grid" style="margin-top:-14px">
-            <div class="stat-card"><div class="stat-label">Financiamentos Ativos</div><div class="stat-value" style="color:var(--warning)">${d.financiamentos_ativos}</div></div>
-            <div class="stat-card"><div class="stat-label">Veículos Quitados</div><div class="stat-value accent">${d.financiamentos_quitados}</div></div>
-            <div class="stat-card"><div class="stat-label">Total Despesas Geral</div><div class="stat-value" style="color:var(--danger)">R$ ${d.total_despesas_geral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-            <div class="stat-card"><div class="stat-label">Valor em Aberto</div><div class="stat-value" style="color:var(--warning)">R$ ${d.valor_em_aberto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-          </div>
-        </div>`;
-    }
-
-    let html = renderBloco('FROTA PRÓPRIA', '🚗', '#9eff1f', data.propria);
-    for (const inv of data.investidores) {
-      html += renderBloco(`${inv.investidor_nome} — ${inv.investidor_comissao}% comissão`, '👥', '#378ADD', inv);
-    }
-    div.innerHTML = html;
-  } catch(e) { console.error(e); }
-}
-      fetch(API+'/veiculos/',auth()), fetch(API+'/clientes/',auth()),
-      fetch(API+'/locacoes/',auth()), fetch(API+'/financiamentos/dashboard',auth()),
-      fetch(API+'/despesas/dashboard',auth())
-    ]);
-    const veiculos=await rv.json(), clientes=await rc.json(), locacoes=await rl.json();
-    const finDash=rf.ok?await rf.json():{}, despDash=rd.ok?await rd.json():{};
-    document.getElementById('stat-veiculos').textContent=veiculos.length;
-    document.getElementById('stat-disponiveis').textContent=veiculos.filter(v=>v.status==='Disponível').length;
-    document.getElementById('stat-clientes').textContent=clientes.length;
-    document.getElementById('stat-locacoes').textContent=locacoes.filter(l=>l.status==='Ativa').length;
-    document.getElementById('stat-parcelas-mes').textContent=finDash.total_parcelas_mes?'R$ '+finDash.total_parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    document.getElementById('stat-fin-ativos').textContent=finDash.financiamentos_ativos??'0';
-    document.getElementById('stat-fin-quitados').textContent=finDash.financiamentos_quitados??'0';
-    document.getElementById('stat-despesas-mes').textContent=despDash.total_despesas_mes?'R$ '+despDash.total_despesas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    document.getElementById('stat-despesas-geral').textContent=despDash.total_despesas_geral?'R$ '+despDash.total_despesas_geral.toLocaleString('pt-BR',{minimumFractionDigits:2}):'R$ 0,00';
-    // Recebimentos pendentes via parcelas
-    let totalRecebido=0, totalPendente=0, pendentes=0;
-    for(const l of locacoes){
-      try{
-        const rp=await fetch(API+'/parcelas/locacao/'+l.id+'/resumo',auth());
-        if(rp.ok){const r=await rp.json();totalRecebido+=r.valor_pago||0;totalPendente+=r.valor_pendente||0;pendentes+=r.pendentes||0;}
-      }catch{}
-    }
-    document.getElementById('stat-receita').textContent='R$ '+totalRecebido.toLocaleString('pt-BR',{minimumFractionDigits:2});
-    document.getElementById('stat-aberto').textContent='R$ '+totalPendente.toLocaleString('pt-BR',{minimumFractionDigits:2});
-    document.getElementById('stat-pendentes').textContent=pendentes;
-    const tbody=document.getElementById('dash-locacoes');
-    const recentes=locacoes.slice(-5).reverse();
-    if(!recentes.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">Nenhuma locação.</td></tr>';return;}
-   const cliMapDash={};(await fetch(API+'/clientes/',auth()).then(r=>r.json())).forEach(c=>cliMapDash[c.id]=c.nome);
-const veiMapDash={};(await fetch(API+'/veiculos/',auth()).then(r=>r.json())).forEach(v=>veiMapDash[v.id]=v.placa);
-tbody.innerHTML=recentes.map(l=>`<tr><td><strong>${cliMapDash[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapDash[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td></tr>`).join('');
-  /* ===== VEÍCULOS ===== */
+/* ===== VEÍCULOS ===== */
 async function carregarVeiculos(){try{const res=await fetch(API+'/veiculos/',auth());veiculosCache=await res.json();renderVeiculos(veiculosCache);}catch{}}
 function renderVeiculos(lista){
   const tbody=document.getElementById('tabela-veiculos');
