@@ -107,14 +107,31 @@ def relatorio_por_categoria(db: Session = Depends(get_db), usuario=Depends(verif
             for k, v in sorted(categorias.items(), key=lambda x: x[1]["total"], reverse=True)]
 
 @router.get("/por-veiculo")
-def relatorio_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+def relatorio_por_veiculo(mes: Optional[str] = Query(None), db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     veiculos = db.query(Veiculo).all()
     resultado = []
+    ano_filtro, mes_filtro = None, None
+    if mes:
+        ano_filtro, mes_filtro = int(mes.split("-")[0]), int(mes.split("-")[1])
     for v in veiculos:
-        despesas = db.query(Despesa).filter(Despesa.veiculo_id == v.id).all()
-        total_despesas = sum(d.valor for d in despesas)
+        query_desp = db.query(Despesa).filter(Despesa.veiculo_id == v.id)
+        if ano_filtro and mes_filtro:
+            query_desp = query_desp.filter(
+                func.extract('year', Despesa.data) == ano_filtro,
+                func.extract('month', Despesa.data) == mes_filtro
+            )
+        total_despesas = sum(d.valor for d in query_desp.all())
         financiamentos = db.query(Financiamento).filter(Financiamento.veiculo_id == v.id).all()
-        total_parcelas = sum(f.total_pago for f in financiamentos)
+        total_parcelas = 0
+        if ano_filtro and mes_filtro:
+            from datetime import date as date_type
+            inicio = date_type(ano_filtro, mes_filtro, 1)
+            for f in financiamentos:
+                meses_desde = (ano_filtro - f.data_inicio.year) * 12 + (mes_filtro - f.data_inicio.month)
+                if 0 <= meses_desde < f.parcelas_pagas:
+                    total_parcelas += f.parcela_mensal
+        else:
+            total_parcelas = sum(f.total_pago for f in financiamentos)
         custo_total = total_despesas + total_parcelas
         resultado.append({
             "veiculo_id": v.id,
