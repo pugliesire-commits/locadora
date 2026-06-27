@@ -178,7 +178,9 @@
 <div class="nav-item" onclick="mostrarPagina('aportes',this)">💰 Aportes</div>
       <div class="nav-section">RELATÓRIOS</div>
 <div class="nav-item" onclick="mostrarPagina('relatorio',this)">📊 Fluxo & DRE</div>
-       <div class="nav-section">INVESTIDORES</div>
+       <div class="nav-section">CONTRATOS</div>
+        <div class="nav-item" onclick="mostrarPagina('contratos',this)">📄 Contratos Assinados</div>
+        <div class="nav-section">INVESTIDORES</div>
         <div class="nav-item" onclick="mostrarPagina('investidores',this)">&#9670; Investidores</div>
         <div class="nav-item" onclick="mostrarPagina('extrato',this)">&#9632; Extrato Mensal</div>
         <div class="nav-section nav-admin" style="display:none">ADMINISTRAÇÃO</div>
@@ -454,6 +456,26 @@
           <div id="area-parcelas-detalhe"></div>
         </div>
 
+       <!-- CONTRATOS ASSINADOS -->
+        <div id="page-contratos" style="display:none">
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Locação</th>
+                  <th>Cliente</th>
+                  <th>Veículo</th>
+                  <th>Início</th>
+                  <th>Fim</th>
+                  <th>Assinado Locatário</th>
+                  <th>Assinado Locador</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tabela-contratos"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
        <!-- INVESTIDORES -->
         <div id="page-investidores" style="display:none">
           <div id="lista-investidores"><div class="empty-state">Carregando...</div></div>
@@ -889,6 +911,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'despesas') {document.getElementById('filtro-mes-despesas').value=new Date().toISOString().slice(0,7);carregarDespesas();}
   else if (nome === 'indicadores') carregarIndicadores();
   else if (nome === 'usuarios') carregarUsuarios();
+  else if (nome === 'contratos') carregarContratos();
   else if (nome === 'investidores') carregarInvestidores();
   else if (nome === 'extrato') carregarTabsExtrato();
   else if (nome === 'aportes') {
@@ -1632,6 +1655,28 @@ async function excluirAporte(id){
     showToast('Aporte excluído.');
     carregarAportes();
   }catch{showToast('Erro.','var(--danger)');}
+}
+/* ===== CONTRATOS ASSINADOS ===== */
+async function carregarContratos(){
+  try{
+    const res=await fetch(API+'/contratos/assinados/lista',auth());
+    const lista=await res.json();
+    const tbody=document.getElementById('tabela-contratos');
+    if(!lista.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum contrato assinado ainda.</td></tr>';return;}
+    tbody.innerHTML=lista.map(c=>`<tr>
+      <td>#${c.locacao_id}</td>
+      <td><strong>${c.cliente_nome}</strong></td>
+      <td>${c.veiculo}</td>
+      <td>${formatData(c.data_inicio)}</td>
+      <td>${formatData(c.data_fim)}</td>
+      <td style="color:var(--green);font-size:12px">✓ ${c.locatario_assinou_em}</td>
+      <td style="color:var(--green);font-size:12px">✓ ${c.locador_assinou_em}</td>
+      <td>
+        <button class="action-btn" style="border-color:#9b59b6;color:#9b59b6" onclick="window.open('/contrato/${c.locacao_id}','_blank')">📄 Ver</button>
+        ${c.tem_html_salvo?`<span class="badge badge-green" style="font-size:10px">💾 Salvo</span>`:''}
+      </td>
+    </tr>`).join('');
+  }catch(e){console.error(e);}
 }
  /* ===== HELPERS ===== */
 function badgePerfil(p){const m={admin:'badge-purple',atendente:'badge-blue',financeiro:'badge-yellow'};const l={admin:'Admin',atendente:'Atendente',financeiro:'Financeiro'};return`<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;}
