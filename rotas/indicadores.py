@@ -136,6 +136,90 @@ def fluxo_caixa(db: Session = Depends(get_db), usuario=Depends(verificar_token))
     entradas = sum(p.valor_pago for p in parcelas) + aportes_mes_atual
     saidas = sum(d.valor for d in despesas)
     saldo = entradas - saidas
+    @router.get("/dashboard-frota")
+def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.investidor import Investidor
+    hoje = date.today()
+    inicio_mes = hoje.replace(day=1)
+
+    def calcular_bloco(veiculo_ids):
+        if not veiculo_ids:
+            return {
+                "total_veiculos": 0, "disponiveis": 0, "locacoes_ativas": 0,
+                "receita_total": 0, "despesas_mes": 0, "valor_em_aberto": 0,
+                "parcelas_mes": 0, "financiamentos_ativos": 0, "financiamentos_quitados": 0,
+                "total_despesas_geral": 0, "parcelas_pendentes": 0
+            }
+        veiculos = db.query(Veiculo).filter(Veiculo.id.in_(veiculo_ids)).all()
+        disponiveis = sum(1 for v in veiculos if v.status == "Disponível")
+        locacoes = db.query(Locacao).filter(
+            Locacao.veiculo_id.in_(veiculo_ids),
+            Locacao.status == "Ativa"
+        ).all()
+        locacao_ids = [l.id for l in locacoes]
+        todas_locacoes = db.query(Locacao).filter(Locacao.veiculo_id.in_(veiculo_ids)).all()
+        todas_locacao_ids = [l.id for l in todas_locacoes]
+        receita_total = db.query(func.sum(Parcela.valor_pago)).filter(
+            Parcela.locacao_id.in_(todas_locacao_ids),
+            Parcela.status.in_(["pago", "parcial"])
+        ).scalar() or 0
+        despesas_mes = db.query(func.sum(Despesa.valor)).filter(
+            Despesa.veiculo_id.in_(veiculo_ids),
+            Despesa.data >= inicio_mes
+        ).scalar() or 0
+        valor_em_aberto = db.query(func.sum(Parcela.valor - Parcela.valor_pago)).filter(
+            Parcela.locacao_id.in_(todas_locacao_ids),
+            Parcela.status != "pago"
+        ).scalar() or 0
+        parcelas_pendentes = db.query(func.count(Parcela.id)).filter(
+            Parcela.locacao_id.in_(todas_locacao_ids),
+            Parcela.status != "pago"
+        ).scalar() or 0
+        fins = db.query(Financiamento).filter(Financiamento.veiculo_id.in_(veiculo_ids)).all()
+        parcelas_mes = 0
+        for f in fins:
+            meses_desde = (hoje.year - f.data_inicio.year) * 12 + (hoje.month - f.data_inicio.month)
+            if 0 <= meses_desde < f.parcelas_pagas:
+                parcelas_mes += f.parcela_mensal
+        fins_ativos = sum(1 for f in fins if not f.quitado)
+        fins_quitados = sum(1 for f in fins if f.quitado)
+        total_despesas_geral = db.query(func.sum(Despesa.valor)).filter(
+            Despesa.veiculo_id.in_(veiculo_ids)
+        ).scalar() or 0
+        return {
+            "total_veiculos": len(veiculos),
+            "disponiveis": disponiveis,
+            "locacoes_ativas": len(locacoes),
+            "receita_total": round(receita_total, 2),
+            "despesas_mes": round(despesas_mes, 2),
+            "valor_em_aberto": round(max(0, valor_em_aberto), 2),
+            "parcelas_mes": round(parcelas_mes, 2),
+            "financiamentos_ativos": fins_ativos,
+            "financiamentos_quitados": fins_quitados,
+            "total_despesas_geral": round(total_despesas_geral, 2),
+            "parcelas_pendentes": parcelas_pendentes
+        }
+
+    # Frota própria
+    veiculos_proprios = db.query(Veiculo).filter(Veiculo.investidor_id == None).all()
+    ids_proprios = [v.id for v in veiculos_proprios]
+
+    # Por investidor
+    investidores = db.query(Investidor).filter(Investidor.ativo == True).all()
+    blocos_investidores = []
+    for inv in investidores:
+        veiculos_inv = db.query(Veiculo).filter(Veiculo.investidor_id == inv.id).all()
+        ids_inv = [v.id for v in veiculos_inv]
+        bloco = calcular_bloco(ids_inv)
+        bloco["investidor_id"] = inv.id
+        bloco["investidor_nome"] = inv.nome
+        bloco["investidor_comissao"] = inv.percentual_comissao
+        blocos_investidores.append(bloco)
+
+    return {
+        "propria": calcular_bloco(ids_proprios),
+        "investidores": blocos_investidores
+    }
     return {
         "periodo": f"{inicio_mes.strftime('%d/%m/%Y')} a {hoje.strftime('%d/%m/%Y')}",
         "entradas": entradas,
