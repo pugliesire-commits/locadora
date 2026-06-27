@@ -427,27 +427,6 @@ def assinar_contrato(locacao_id: int, dados: dict, db: Session = Depends(get_db)
     db.commit()
     return {"mensagem": "Contrato assinado pelo locatario com sucesso!"}
 
-@router.get("/assinados/lista")
-def listar_contratos_assinados(db: Session = Depends(get_db)):
-    locs = db.query(Locacao).filter(
-        Locacao.contrato_assinado == True,
-        Locacao.locador_assinado == True
-    ).order_by(Locacao.contrato_assinado_em.desc()).all()
-    resultado = []
-    for l in locs:
-        cli = db.query(Cliente).filter(Cliente.id == l.cliente_id).first()
-        vei = db.query(Veiculo).filter(Veiculo.id == l.veiculo_id).first()
-        resultado.append({
-            "locacao_id": l.id,
-            "cliente_nome": cli.nome if cli else "---",
-            "veiculo": f"{vei.marca} {vei.modelo} {vei.placa}" if vei else "---",
-            "data_inicio": l.data_inicio,
-            "data_fim": l.data_fim,
-            "locatario_assinou_em": l.contrato_assinado_em.strftime("%d/%m/%Y %H:%M") if l.contrato_assinado_em else "---",
-            "locador_assinou_em": l.locador_assinado_em.strftime("%d/%m/%Y %H:%M") if l.locador_assinado_em else "---",
-            "tem_html_salvo": bool(l.contrato_pdf_html)
-        })
-    return resultado
 @router.post("/{locacao_id}/assinar-locador")
 def assinar_locador(locacao_id: int, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     if not authorization or not authorization.startswith("Bearer "):
