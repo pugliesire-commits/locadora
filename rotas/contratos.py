@@ -34,6 +34,28 @@ def formatar_datetime(d):
     try: return d.strftime("%d/%m/%Y %H:%M")
     except: return str(d)
 
+@router.get("/assinados/lista")
+def listar_contratos_assinados(db: Session = Depends(get_db)):
+    locs = db.query(Locacao).filter(
+        Locacao.contrato_assinado == True,
+        Locacao.locador_assinado == True
+    ).order_by(Locacao.contrato_assinado_em.desc()).all()
+    resultado = []
+    for l in locs:
+        cli = db.query(Cliente).filter(Cliente.id == l.cliente_id).first()
+        vei = db.query(Veiculo).filter(Veiculo.id == l.veiculo_id).first()
+        resultado.append({
+            "locacao_id": l.id,
+            "cliente_nome": cli.nome if cli else "---",
+            "veiculo": f"{vei.marca} {vei.modelo} {vei.placa}" if vei else "---",
+            "data_inicio": l.data_inicio,
+            "data_fim": l.data_fim,
+            "locatario_assinou_em": l.contrato_assinado_em.strftime("%d/%m/%Y %H:%M") if l.contrato_assinado_em else "---",
+            "locador_assinou_em": l.locador_assinado_em.strftime("%d/%m/%Y %H:%M") if l.locador_assinado_em else "---",
+            "tem_html_salvo": bool(l.contrato_pdf_html)
+        })
+    return resultado
+
 @router.get("/{locacao_id}", response_class=HTMLResponse)
 def gerar_contrato(locacao_id: int, db: Session = Depends(get_db)):
     loc = db.query(Locacao).filter(Locacao.id == locacao_id).first()
