@@ -136,7 +136,15 @@ def fluxo_caixa(db: Session = Depends(get_db), usuario=Depends(verificar_token))
     entradas = sum(p.valor_pago for p in parcelas) + aportes_mes_atual
     saidas = sum(d.valor for d in despesas)
     saldo = entradas - saidas
-    @router.get("/dashboard-frota")
+    return {
+        "periodo": f"{inicio_mes.strftime('%d/%m/%Y')} a {hoje.strftime('%d/%m/%Y')}",
+        "entradas": entradas,
+        "saidas": saidas,
+        "saldo": saldo,
+        "situacao": "✅ Positivo" if saldo > 0 else "⚠️ Negativo" if saldo < 0 else "➡️ Neutro"
+    }
+
+@router.get("/dashboard-frota")
 def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     from modelos.investidor import Investidor
     hoje = date.today()
@@ -156,7 +164,6 @@ def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_tok
             Locacao.veiculo_id.in_(veiculo_ids),
             Locacao.status == "Ativa"
         ).all()
-        locacao_ids = [l.id for l in locacoes]
         todas_locacoes = db.query(Locacao).filter(Locacao.veiculo_id.in_(veiculo_ids)).all()
         todas_locacao_ids = [l.id for l in todas_locacoes]
         receita_total = db.query(func.sum(Parcela.valor_pago)).filter(
@@ -200,11 +207,8 @@ def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_tok
             "parcelas_pendentes": parcelas_pendentes
         }
 
-    # Frota própria
     veiculos_proprios = db.query(Veiculo).filter(Veiculo.investidor_id == None).all()
     ids_proprios = [v.id for v in veiculos_proprios]
-
-    # Por investidor
     investidores = db.query(Investidor).filter(Investidor.ativo == True).all()
     blocos_investidores = []
     for inv in investidores:
@@ -219,11 +223,4 @@ def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_tok
     return {
         "propria": calcular_bloco(ids_proprios),
         "investidores": blocos_investidores
-    }
-    return {
-        "periodo": f"{inicio_mes.strftime('%d/%m/%Y')} a {hoje.strftime('%d/%m/%Y')}",
-        "entradas": entradas,
-        "saidas": saidas,
-        "saldo": saldo,
-        "situacao": "✅ Positivo" if saldo > 0 else "⚠️ Negativo" if saldo < 0 else "➡️ Neutro"
     }
