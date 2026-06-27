@@ -502,6 +502,9 @@
       </div>
       <div class="field"><label>Diária (R$)</label><input id="v-diaria" type="number" placeholder="150"/></div>
       <div class="field full"><label>Cor</label><input id="v-cor" placeholder="Ex: Prata"/></div>
+      <div class="field full"><label>Chassi</label><input id="v-chassi" placeholder="Ex: 9BWZZZ377VT004251"/></div>
+      <div class="field"><label>RENAVAM</label><input id="v-renavam" placeholder="Ex: 00123456789"/></div>
+      <div class="field"><label>Quilometragem Atual</label><input id="v-quilometragem" type="number" placeholder="Ex: 15000"/></div>
       <div class="field full">
         <label>Tipo de Veículo</label>
         <div class="tipo-veiculo-box" style="display:flex;gap:24px;margin-top:6px">
@@ -536,7 +539,21 @@
       <div class="field"><label>CNH</label><input id="c-cnh" placeholder="Número da CNH"/></div>
       <div class="field"><label>E-mail</label><input id="c-email" type="email" placeholder="email@exemplo.com"/></div>
       <div class="field"><label>Telefone</label><input id="c-telefone" placeholder="(11) 99999-9999"/></div>
-      <div class="field full"><label>Endereço</label><input id="c-endereco" placeholder="Rua, número, bairro"/></div>
+      <div class="field full"><label>Estado Civil</label>
+        <select id="c-estado-civil" class="select-input">
+          <option value="">Selecione...</option>
+          <option value="Solteiro(a)">Solteiro(a)</option>
+          <option value="Casado(a)">Casado(a)</option>
+          <option value="Divorciado(a)">Divorciado(a)</option>
+          <option value="Viúvo(a)">Viúvo(a)</option>
+          <option value="União Estável">União Estável</option>
+        </select>
+      </div>
+      <div class="field full"><label>Endereço (Rua e Número)</label><input id="c-endereco" placeholder="Ex: Rua das Flores, 123"/></div>
+      <div class="field"><label>Bairro</label><input id="c-bairro" placeholder="Ex: Centro"/></div>
+      <div class="field"><label>Cidade</label><input id="c-cidade" placeholder="Ex: São João da Boa Vista"/></div>
+      <div class="field"><label>Estado (UF)</label><input id="c-estado" placeholder="Ex: SP" maxlength="2"/></div>
+      <div class="field"><label>CEP</label><input id="c-cep" placeholder="00000-000"/></div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="fecharModal('modal-cliente')">Cancelar</button>
@@ -985,7 +1002,7 @@ function alternarTipoVeiculo(tipo){const campo=document.getElementById('campo-in
 async function salvarVeiculo(){
   const idEdicao=document.getElementById('modal-veiculo').dataset.editId;
   const invId=document.getElementById('v-investidor').value;
-  const body={marca:document.getElementById('v-marca').value,modelo:document.getElementById('v-modelo').value,placa:document.getElementById('v-placa').value,ano:parseInt(document.getElementById('v-ano').value)||2023,categoria:document.getElementById('v-categoria').value,valor_diaria:parseFloat(document.getElementById('v-diaria').value)||0,cor:document.getElementById('v-cor').value,status:'Disponível',investidor_id:invId?parseInt(invId):null};
+  const body={marca:document.getElementById('v-marca').value,modelo:document.getElementById('v-modelo').value,placa:document.getElementById('v-placa').value,ano:parseInt(document.getElementById('v-ano').value)||2023,categoria:document.getElementById('v-categoria').value,valor_diaria:parseFloat(document.getElementById('v-diaria').value)||0,cor:document.getElementById('v-cor').value,chassi:document.getElementById('v-chassi').value,renavam:document.getElementById('v-renavam').value,quilometragem:parseFloat(document.getElementById('v-quilometragem').value)||0,status:'Disponível',investidor_id:invId?parseInt(invId):null};
   if(!body.marca||!body.modelo||!body.placa||!body.valor_diaria){showToast('Preencha os campos obrigatórios.','var(--warning)');return;}
   try{const url=idEdicao?API+'/veiculos/'+idEdicao:API+'/veiculos/';const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-veiculo');document.getElementById('modal-veiculo').dataset.editId='';showToast(idEdicao?'✓ Veículo atualizado!':'✓ Veículo cadastrado!');carregarVeiculos();}catch{showToast('Erro ao salvar.','var(--danger)');}
 }
@@ -994,7 +1011,7 @@ function editarVeiculo(id){
   const v=veiculosCache.find(x=>x.id===id);if(!v)return;
   document.getElementById('modal-veiculo-title').textContent='Editar Veículo';
   document.getElementById('modal-veiculo').dataset.editId=id;
-  document.getElementById('v-marca').value=v.marca||'';document.getElementById('v-modelo').value=v.modelo||'';document.getElementById('v-placa').value=v.placa||'';document.getElementById('v-ano').value=v.ano||'';document.getElementById('v-categoria').value=v.categoria||'sedan';document.getElementById('v-diaria').value=v.valor_diaria||'';document.getElementById('v-cor').value=v.cor||'';
+  document.getElementById('v-marca').value=v.marca||'';document.getElementById('v-modelo').value=v.modelo||'';document.getElementById('v-placa').value=v.placa||'';document.getElementById('v-ano').value=v.ano||'';document.getElementById('v-categoria').value=v.categoria||'sedan';document.getElementById('v-diaria').value=v.valor_diaria||'';document.getElementById('v-cor').value=v.cor||'';document.getElementById('v-chassi').value=v.chassi||'';document.getElementById('v-renavam').value=v.renavam||'';document.getElementById('v-quilometragem').value=v.quilometragem||0;
   if(v.investidor_id){document.querySelector('input[name="v-tipo"][value="investidor"]').checked=true;alternarTipoVeiculo('investidor');carregarSelectsInvestidor().then(()=>{document.getElementById('v-investidor').value=v.investidor_id;});}
   else{document.querySelector('input[name="v-tipo"][value="proprio"]').checked=true;alternarTipoVeiculo('proprio');}
   document.getElementById('modal-veiculo').classList.add('open');
@@ -1007,7 +1024,7 @@ function renderClientes(lista){const tbody=document.getElementById('tabela-clien
 function buscarClientes(q){renderClientes(clientesCache.filter(c=>(c.nome+c.cpf+(c.email||'')).toLowerCase().includes(q.toLowerCase())));}
 async function salvarCliente(){
   const idEdicao=document.getElementById('modal-cliente').dataset.editId;
-  const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,endereco:document.getElementById('c-endereco').value};
+  const body={nome:document.getElementById('c-nome').value,cpf:document.getElementById('c-cpf').value,cnh:document.getElementById('c-cnh').value,email:document.getElementById('c-email').value,telefone:document.getElementById('c-telefone').value,estado_civil:document.getElementById('c-estado-civil').value,endereco:document.getElementById('c-endereco').value,bairro:document.getElementById('c-bairro').value,cidade:document.getElementById('c-cidade').value,estado:document.getElementById('c-estado').value,cep:document.getElementById('c-cep').value};
   if(!body.nome){showToast('Digite o nome.','var(--warning)');return;}
   try{const url=idEdicao?API+'/clientes/'+idEdicao:API+'/clientes/';const res=await fetch(url,{method:idEdicao?'PUT':'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();fecharModal('modal-cliente');document.getElementById('modal-cliente').dataset.editId='';showToast(idEdicao?'✓ Cliente atualizado!':'✓ Cliente cadastrado!');await carregarClientes();}catch{showToast('Erro.','var(--danger)');}
 }
@@ -1016,7 +1033,7 @@ function editarCliente(id){
   const c=clientesCache.find(x=>x.id===id);if(!c)return;
   document.getElementById('modal-cliente-title').textContent='Editar Cliente';
   document.getElementById('modal-cliente').dataset.editId=id;
-  document.getElementById('c-nome').value=c.nome||'';document.getElementById('c-cpf').value=c.cpf||'';document.getElementById('c-cnh').value=c.cnh||'';document.getElementById('c-email').value=c.email||'';document.getElementById('c-telefone').value=c.telefone||'';document.getElementById('c-endereco').value=c.endereco||'';
+  document.getElementById('c-nome').value=c.nome||'';document.getElementById('c-cpf').value=c.cpf||'';document.getElementById('c-cnh').value=c.cnh||'';document.getElementById('c-email').value=c.email||'';document.getElementById('c-telefone').value=c.telefone||'';document.getElementById('c-estado-civil').value=c.estado_civil||'';document.getElementById('c-endereco').value=c.endereco||'';document.getElementById('c-bairro').value=c.bairro||'';document.getElementById('c-cidade').value=c.cidade||'';document.getElementById('c-estado').value=c.estado||'';document.getElementById('c-cep').value=c.cep||'';
   document.getElementById('modal-cliente').classList.add('open');
 }
 async function excluirCliente(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir este cliente?'))return;try{const res=await fetch(API+'/clientes/'+id,{method:'DELETE',...auth()});if(!res.ok){const err=await res.json();showToast(err.detail||'Erro ao excluir.','var(--danger)');return;}showToast('Cliente excluído.');await carregarClientes();}catch{showToast('Erro.','var(--danger)');}}
@@ -1041,6 +1058,7 @@ tbody.innerHTML=locacoesCache.map(l=>`<tr>
       <td>${badgeStatus(l.status)}</td>
       <td>
         <button class="action-btn" onclick="verRecebimentos(${l.id})">💰 Receber</button>
+        <button class="action-btn" onclick="window.open('/contrato/${l.id}','_blank')" style="border-color:#9b59b6;color:#9b59b6">📄 Contrato</button>
 ${l.status==='Ativa'&&podeEditar()?`<button class="action-btn warning" onclick="devolverVeiculo(${l.id})">🔑 Devolver</button>`:''}
         <button class="action-btn" onclick="abrirExtra(${l.id})">+ Extra</button>
         ${podeExcluir()?`<button class="action-btn danger" onclick="excluirLocacao(${l.id})">Excluir</button>`:''}
