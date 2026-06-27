@@ -207,29 +207,7 @@
 
         <!-- DASHBOARD -->
         <div id="page-dashboard">
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-label">Veículos</div><div class="stat-value accent" id="stat-veiculos">—</div></div>
-            <div class="stat-card"><div class="stat-label">Disponíveis</div><div class="stat-value accent" id="stat-disponiveis">—</div></div>
-            <div class="stat-card"><div class="stat-label">Clientes</div><div class="stat-value" id="stat-clientes">—</div></div>
-            <div class="stat-card"><div class="stat-label">Locações ativas</div><div class="stat-value accent" id="stat-locacoes">—</div></div>
-          </div>
-          <div class="stats-grid" style="margin-top:-14px">
-            <div class="stat-card"><div class="stat-label">Receita total</div><div class="stat-value accent" id="stat-receita">—</div></div>
-            <div class="stat-card"><div class="stat-label">Despesas do mês</div><div class="stat-value" style="color:var(--danger)" id="stat-despesas-mes">—</div></div>
-            <div class="stat-card"><div class="stat-label">Valor em aberto</div><div class="stat-value" style="color:var(--warning)" id="stat-aberto">—</div></div>
-            <div class="stat-card"><div class="stat-label">Parcelas do mês</div><div class="stat-value" style="color:var(--info)" id="stat-parcelas-mes">—</div></div>
-          </div>
-          <div class="stats-grid" style="margin-top:-14px">
-            <div class="stat-card"><div class="stat-label">Financiamentos ativos</div><div class="stat-value" style="color:var(--warning)" id="stat-fin-ativos">—</div></div>
-            <div class="stat-card"><div class="stat-label">Veículos quitados</div><div class="stat-value accent" id="stat-fin-quitados">—</div></div>
-            <div class="stat-card"><div class="stat-label">Total despesas geral</div><div class="stat-value" style="color:var(--danger)" id="stat-despesas-geral">—</div></div>
-            <div class="stat-card"><div class="stat-label">Recebimentos pendentes</div><div class="stat-value" style="color:var(--warning)" id="stat-pendentes">—</div></div>
-          </div>
-          <div class="section-title">Locações recentes</div>
-          <div class="table-card">
-            <table><thead><tr><th>Cliente</th><th>Veículo</th><th>Início</th><th>Fim</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody id="dash-locacoes"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody></table>
-          </div>
+          <div class="empty-state" style="padding:20px">Carregando dashboard...</div>
         </div>
 
         <!-- VEÍCULOS -->
@@ -979,6 +957,44 @@ async function carregarDashboard() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     const div = document.getElementById('page-dashboard');
+    function renderBloco(titulo, icone, cor, d) {
+      return `<div style="margin-bottom:32px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${cor}44">
+          <span style="font-size:20px">${icone}</span>
+          <span style="font-size:15px;font-weight:700;color:${cor}">${titulo}</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Veículos</div><div class="stat-value accent">${d.total_veiculos}</div></div>
+          <div class="stat-card"><div class="stat-label">Disponíveis</div><div class="stat-value accent">${d.disponiveis}</div></div>
+          <div class="stat-card"><div class="stat-label">Locações Ativas</div><div class="stat-value accent">${d.locacoes_ativas}</div></div>
+          <div class="stat-card"><div class="stat-label">Recebimentos Pendentes</div><div class="stat-value" style="color:var(--warning)">${d.parcelas_pendentes}</div></div>
+        </div>
+        <div class="stats-grid" style="margin-top:-14px">
+          <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value accent">R$ ${d.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          <div class="stat-card"><div class="stat-label">Despesas do Mês</div><div class="stat-value" style="color:var(--danger)">R$ ${d.despesas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          <div class="stat-card"><div class="stat-label">Valor em Aberto</div><div class="stat-value" style="color:var(--warning)">R$ ${d.valor_em_aberto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          <div class="stat-card"><div class="stat-label">Parcelas do Mês</div><div class="stat-value" style="color:var(--info)">R$ ${d.parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+        </div>
+        <div class="stats-grid" style="margin-top:-14px">
+          <div class="stat-card"><div class="stat-label">Financiamentos Ativos</div><div class="stat-value" style="color:var(--warning)">${d.financiamentos_ativos}</div></div>
+          <div class="stat-card"><div class="stat-label">Veículos Quitados</div><div class="stat-value accent">${d.financiamentos_quitados}</div></div>
+          <div class="stat-card"><div class="stat-label">Total Despesas Geral</div><div class="stat-value" style="color:var(--danger)">R$ ${d.total_despesas_geral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+          <div class="stat-card"><div class="stat-label">Parcelas Financiamentos</div><div class="stat-value" style="color:var(--warning)">R$ ${d.parcelas_mes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
+        </div>
+      </div>`;
+    }
+    let html = renderBloco('FROTA PRÓPRIA', '🚗', '#9eff1f', data.propria);
+    for (const inv of data.investidores) {
+      html += renderBloco(`${inv.investidor_nome} — ${inv.investidor_comissao}% comissão`, '👥', '#378ADD', inv);
+    }
+    div.innerHTML = html;
+  } catch(e) { console.error(e); }
+}
+  try {
+    const res = await fetch(API + '/indicadores/dashboard-frota', auth());
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const div = document.getElementById('page-dashboard');
 
     function renderBloco(titulo, icone, cor, d) {
       return `
@@ -1015,8 +1031,6 @@ async function carregarDashboard() {
     div.innerHTML = html;
   } catch(e) { console.error(e); }
 }
-  try {
-    const [rv,rc,rl,rf,rd] = await Promise.all([
       fetch(API+'/veiculos/',auth()), fetch(API+'/clientes/',auth()),
       fetch(API+'/locacoes/',auth()), fetch(API+'/financiamentos/dashboard',auth()),
       fetch(API+'/despesas/dashboard',auth())
@@ -1049,10 +1063,7 @@ async function carregarDashboard() {
    const cliMapDash={};(await fetch(API+'/clientes/',auth()).then(r=>r.json())).forEach(c=>cliMapDash[c.id]=c.nome);
 const veiMapDash={};(await fetch(API+'/veiculos/',auth()).then(r=>r.json())).forEach(v=>veiMapDash[v.id]=v.placa);
 tbody.innerHTML=recentes.map(l=>`<tr><td><strong>${cliMapDash[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapDash[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td></tr>`).join('');
-  } catch(e){console.error(e);}
-}
-
-/* ===== VEÍCULOS ===== */
+  /* ===== VEÍCULOS ===== */
 async function carregarVeiculos(){try{const res=await fetch(API+'/veiculos/',auth());veiculosCache=await res.json();renderVeiculos(veiculosCache);}catch{}}
 function renderVeiculos(lista){
   const tbody=document.getElementById('tabela-veiculos');
