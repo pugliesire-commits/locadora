@@ -411,7 +411,7 @@ def assinar_locador(locacao_id: int, authorization: Optional[str] = Header(None)
         raise HTTPException(status_code=401, detail="Token nao fornecido")
     token = authorization.replace("Bearer ", "")
     try:
-        SECRET_KEY = os.environ.get("SECRET_KEY", "locacar_secret")
+        SECRET_KEY = "locadora-chave-secreta-2024-mude-em-producao"
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         email = payload.get("sub")
         usuario = db.query(Usuario).filter(Usuario.email == email).first()
