@@ -25,7 +25,10 @@ try:
         "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS estado VARCHAR;",
         "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS cep VARCHAR;",
         "ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS chassi VARCHAR;",
-        "ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS renavam VARCHAR;",
+       "ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS renavam VARCHAR;",
+        "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado BOOLEAN DEFAULT FALSE;",
+        "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_nome VARCHAR;",
+        "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_em TIMESTAMP;",
     ]
     for _cmd in _cmds:
         try: _cur.execute(_cmd)
