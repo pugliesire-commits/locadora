@@ -429,5 +429,12 @@ def assinar_locador(locacao_id: int, authorization: Optional[str] = Header(None)
     loc.locador_assinado = True
     loc.locador_assinado_nome = usuario.nome
     loc.locador_assinado_em = datetime.now()
+    # Se ambos assinaram, salva o HTML do contrato
+    if loc.contrato_assinado and loc.locador_assinado:
+        from rotas.contratos import gerar_contrato
+        try:
+            html_content = gerar_contrato(locacao_id, db)
+            loc.contrato_pdf_html = html_content.body.decode('utf-8')
+        except: pass
     db.commit()
     return {"mensagem": f"Contrato assinado por {usuario.nome} em nome da LOCA MAIS CAR!"}
