@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from modelos.database import get_db
 from modelos.locacao import Locacao
 from modelos.cliente import Cliente
 from modelos.veiculo import Veiculo
+from modelos.usuario import Usuario
 from datetime import datetime
+from typing import Optional
+import jwt
+import os
 
 router = APIRouter(prefix="/contratos", tags=["Contratos"])
 
@@ -25,6 +29,11 @@ def formatar_data(d):
         return d.strftime("%d/%m/%Y")
     except: return str(d)
 
+def formatar_datetime(d):
+    if not d: return "___"
+    try: return d.strftime("%d/%m/%Y %H:%M")
+    except: return str(d)
+
 @router.get("/{locacao_id}", response_class=HTMLResponse)
 def gerar_contrato(locacao_id: int, db: Session = Depends(get_db)):
     loc = db.query(Locacao).filter(Locacao.id == locacao_id).first()
@@ -40,6 +49,17 @@ def gerar_contrato(locacao_id: int, db: Session = Depends(get_db)):
     data_inicio = formatar_data_extenso(loc.data_inicio)
     data_fim = formatar_data_extenso(loc.data_fim)
     data_hoje = formatar_data_extenso(datetime.now())
+
+    # Status assinaturas
+    loc_assinado = loc.contrato_assinado or False
+    loc_nome = loc.contrato_assinado_nome or ""
+    loc_em = formatar_datetime(loc.contrato_assinado_em) if loc.contrato_assinado_em else ""
+    loca_assinado = loc.locador_assinado or False
+    loca_nome = loc.locador_assinado_nome or ""
+    loca_em = formatar_datetime(loc.locador_assinado_em) if loc.locador_assinado_em else ""
+
+    status_locatario = f'<span style="color:green;font-weight:700">✓ Assinado por {loc_nome} em {loc_em}</span>' if loc_assinado else '<span style="color:#cc0000">⚠ Aguardando assinatura do locatário</span>'
+    status_locador = f'<span style="color:green;font-weight:700">✓ Assinado por {loca_nome} em {loca_em}</span>' if loca_assinado else '<span style="color:#cc0000">⚠ Aguardando assinatura do locador</span>'
 
     html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
@@ -58,19 +78,21 @@ def gerar_contrato(locacao_id: int, db: Session = Depends(get_db)):
   table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
   table th, table td {{ border: 1px solid #000; padding: 6px 10px; font-size: 12px; }}
   table th {{ background: #f0f0f0; text-align: center; }}
-  .linha-assinatura {{ border-top: 1px solid #000; width: 280px; margin: 50px auto 4px; }}
+  .linha {{ border-top: 1px solid #000; margin-bottom: 6px; }}
   .centro {{ text-align: center; }}
   .bloco-assinatura {{ display: flex; justify-content: space-between; margin-top: 60px; }}
   .assinante {{ text-align: center; width: 45%; }}
-  .assinante .linha {{ border-top: 1px solid #000; margin-bottom: 6px; }}
-  .testemunhas {{ margin-top: 40px; }}
-  .testemunha-linha {{ border-top: 1px solid #000; width: 45%; display: inline-block; margin-top: 40px; }}
   @media print {{ .no-print {{ display: none; }} body {{ padding: 20px; }} }}
   .btn-imprimir {{ background: #007bff; color: #fff; border: none; padding: 10px 24px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; margin: 5px; }}
   .btn-assinar {{ background: #28a745; color: #fff; border: none; padding: 12px 32px; font-size: 15px; font-weight: 800; border-radius: 8px; cursor: pointer; display: block; margin: 20px auto; }}
+  .btn-locador {{ background: #1a1a2e; color: #9eff1f; border: 2px solid #9eff1f; padding: 12px 32px; font-size: 15px; font-weight: 800; border-radius: 8px; cursor: pointer; display: block; margin: 20px auto; }}
   .assinatura-box {{ background: #f9f9f9; border: 2px dashed #aaa; border-radius: 10px; padding: 24px; margin: 20px 0; text-align: center; display: none; }}
   .assinatura-box input {{ width: 80%; padding: 10px; font-size: 14px; margin: 8px auto; border: 1px solid #ccc; border-radius: 6px; display: block; }}
-  .confirmado {{ background: #e8ffe8; border: 2px solid #2a2; border-radius: 10px; padding: 20px; text-align: center; display: none; }}
+  .confirmado {{ background: #e8ffe8; border: 2px solid #2a2; border-radius: 10px; padding: 20px; text-align: center; }}
+  .status-box {{ background: #f5f5f5; border: 1px solid #ddd; border-radius: 10px; padding: 16px 20px; margin: 20px 0; }}
+  .status-box h3 {{ font-size: 13px; margin-bottom: 10px; color: #333; }}
+  .status-linha {{ display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }}
+  .status-linha:last-child {{ border-bottom: none; }}
   .secao-digital {{ margin-top: 40px; border-top: 2px solid #ccc; padding-top: 20px; }}
 </style>
 </head>
@@ -241,24 +263,23 @@ PIX - 57800204000100 - CNPJ</p>
   <div class="assinante">
     <div class="linha"></div>
     <p>LOCA MAIS CAR LOCACAO DE VEICULOS LTDA</p>
+    <p style="font-size:11px;color:#555">{status_locador}</p>
   </div>
   <div class="assinante">
     <div class="linha"></div>
     <p><strong>{cli.nome or "LOCATARIO"}</strong> (LOCATARIO)</p>
+    <p style="font-size:11px;color:#555">{status_locatario}</p>
   </div>
 </div>
 
-<div class="testemunhas">
-  <p><strong>Testemunhas:</strong></p>
-  <div style="display:flex;justify-content:space-between;margin-top:10px">
-    <div style="width:45%">
-      <div style="border-top:1px solid #000;margin-top:50px;margin-bottom:6px"></div>
-      <p>Nome: ___________________________ CPF: _______________</p>
-    </div>
-    <div style="width:45%">
-      <div style="border-top:1px solid #000;margin-top:50px;margin-bottom:6px"></div>
-      <p>Nome: ___________________________ CPF: _______________</p>
-    </div>
+<div style="display:flex;justify-content:space-between;margin-top:40px">
+  <div style="width:45%">
+    <div style="border-top:1px solid #000;margin-top:50px;margin-bottom:6px"></div>
+    <p>Nome: ___________________________ CPF: _______________</p>
+  </div>
+  <div style="width:45%">
+    <div style="border-top:1px solid #000;margin-top:50px;margin-bottom:6px"></div>
+    <p>Nome: ___________________________ CPF: _______________</p>
   </div>
 </div>
 
@@ -266,11 +287,7 @@ PIX - 57800204000100 - CNPJ</p>
 <p style="text-align:center">Checklist de vistoria do veiculo:</p>
 <table>
   <thead>
-    <tr>
-      <th>Item</th>
-      <th>Condicao na Entrega</th>
-      <th>Observacoes</th>
-    </tr>
+    <tr><th>Item</th><th>Condicao na Entrega</th><th>Observacoes</th></tr>
   </thead>
   <tbody>
     {"".join([f'<tr><td>{item}</td><td style="text-align:center"><label><input type="radio" name="item_{i}" value="sim"> Sim</label> &nbsp;&nbsp; <label><input type="radio" name="item_{i}" value="nao"> Nao</label></td><td><input type="text" style="width:95%;border:none;border-bottom:1px solid #ccc;outline:none"></td></tr>' for i, item in enumerate(["Pneus","Estepe","Macaco/Chave de Roda","Vidros/Parabrisa","Retrovisores","Faróis/Lanternas","Banco dianteiro/traseiro","Estofamento interno","Painel de instrumentos","Ar-condicionado","Radio/Multimidia","Documentos do veiculo","Chave reserva","Carroceria/Lataria"])])}
@@ -288,27 +305,49 @@ PIX - 57800204000100 - CNPJ</p>
   </div>
 </div>
 
-<div class="no-print secao-digital">
-  <h2 style="text-align:center">Assinatura Digital</h2>
-  <div id="area-assinar">
-    <button class="btn-assinar" onclick="document.getElementById('area-assinar').style.display='none';document.getElementById('form-assinar').style.display='block'">Clique aqui para assinar este contrato</button>
+<div class="no-print secao-digital" style="margin-top:40px;border-top:2px solid #ccc;padding-top:20px">
+  <h2 style="text-align:center">Assinaturas Digitais</h2>
+
+  <div class="status-box">
+    <h3>Status do Contrato</h3>
+    <div class="status-linha">
+      <span><strong>Locatario:</strong> {cli.nome or "___"}</span>
+      <span>{status_locatario}</span>
+    </div>
+    <div class="status-linha">
+      <span><strong>Locador:</strong> LOCA MAIS CAR</span>
+      <span>{status_locador}</span>
+    </div>
+  </div>
+
+  {'<div class="confirmado"><h3>✓ Contrato Assinado pelo Locatario</h3><p>'+loc_nome+' assinou em '+loc_em+'</p></div>' if loc_assinado else '''
+  <div id="area-assinar-locatario">
+    <button class="btn-assinar" onclick="document.getElementById('area-assinar-locatario').style.display='none';document.getElementById('form-assinar').style.display='block'">Clique aqui para assinar como Locatario</button>
   </div>
   <div class="assinatura-box" id="form-assinar">
     <p><strong>Para assinar, confirme seus dados:</strong></p>
     <input type="text" id="ass-nome" placeholder="Digite seu nome completo"/>
     <input type="text" id="ass-cpf" placeholder="Digite seu CPF (000.000.000-00)"/>
-    <button class="btn-assinar" onclick="assinarContrato()">Confirmar Assinatura</button>
+    <button class="btn-assinar" onclick="assinarLocatario()">Confirmar Assinatura</button>
     <p style="font-size:11px;color:#666;margin-top:10px">Ao clicar em confirmar, voce declara ter lido e concordado com todos os termos deste contrato.</p>
   </div>
-  <div class="confirmado" id="confirmado">
-    <h2>Contrato Assinado!</h2>
-    <p id="msg-confirmado"></p>
-    <p style="font-size:12px;color:#666">Data e hora: <span id="data-assinatura"></span></p>
+  '''}
+
+  <div style="margin-top:20px">
+    {'<div class="confirmado"><h3>✓ Contrato Assinado pelo Locador</h3><p>'+loca_nome+' assinou em '+loca_em+'</p></div>' if loca_assinado else '''
+    <div id="area-assinar-locador">
+      <button class="btn-locador" onclick="assinarLocador()">🔑 Assinar como Locador (Admin)</button>
+    </div>
+    '''}
   </div>
+
+  <div id="msg-resultado" style="margin-top:10px"></div>
 </div>
 
 <script>
-async function assinarContrato() {{
+const TOKEN = localStorage.getItem('locacar_token') || '';
+
+async function assinarLocatario() {{
   const nome = document.getElementById('ass-nome').value.trim();
   const cpf = document.getElementById('ass-cpf').value.trim();
   if(!nome || !cpf) {{ alert('Preencha nome e CPF para assinar.'); return; }}
@@ -319,16 +358,35 @@ async function assinarContrato() {{
       body: JSON.stringify({{nome, cpf}})
     }});
     if(res.ok) {{
-      document.getElementById('form-assinar').style.display = 'none';
-      document.getElementById('confirmado').style.display = 'block';
-      document.getElementById('msg-confirmado').textContent = nome + ' assinou este contrato digitalmente.';
-      document.getElementById('data-assinatura').textContent = new Date().toLocaleString('pt-BR');
+      document.getElementById('msg-resultado').innerHTML = '<div class="confirmado"><h3>✓ Assinatura registrada!</h3><p>Recarregue a pagina para ver o status atualizado.</p></div>';
+      setTimeout(()=>location.reload(), 2000);
     }} else {{
       alert('Erro ao registrar assinatura. Tente novamente.');
     }}
-  }} catch(e) {{
-    alert('Erro de conexao. Tente novamente.');
+  }} catch(e) {{ alert('Erro de conexao.'); }}
+}}
+
+async function assinarLocador() {{
+  const token = localStorage.getItem('locacar_token') || '';
+  if(!token) {{
+    alert('Voce precisa estar logado no painel como administrador para assinar como Locador.');
+    return;
   }}
+  if(!confirm('Confirmar assinatura como Locador (LOCA MAIS CAR)?')) return;
+  try {{
+    const res = await fetch('/contratos/{locacao_id}/assinar-locador', {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token}}
+    }});
+    if(res.ok) {{
+      const data = await res.json();
+      document.getElementById('msg-resultado').innerHTML = '<div class="confirmado"><h3>✓ '+data.mensagem+'</h3><p>Recarregando...</p></div>';
+      setTimeout(()=>location.reload(), 2000);
+    }} else {{
+      const err = await res.json();
+      alert(err.detail || 'Erro ao assinar. Verifique se voce esta logado como admin.');
+    }}
+  }} catch(e) {{ alert('Erro de conexao.'); }}
 }}
 </script>
 </body>
@@ -345,4 +403,31 @@ def assinar_contrato(locacao_id: int, dados: dict, db: Session = Depends(get_db)
     loc.contrato_assinado_cpf = dados.get("cpf")
     loc.contrato_assinado_em = datetime.now()
     db.commit()
-    return {"mensagem": "Contrato assinado com sucesso!"}
+    return {"mensagem": "Contrato assinado pelo locatario com sucesso!"}
+
+@router.post("/{locacao_id}/assinar-locador")
+def assinar_locador(locacao_id: int, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token nao fornecido")
+    token = authorization.replace("Bearer ", "")
+    try:
+        SECRET_KEY = os.environ.get("SECRET_KEY", "locacar_secret")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("sub")
+        usuario = db.query(Usuario).filter(Usuario.email == email).first()
+        if not usuario:
+            raise HTTPException(status_code=401, detail="Usuario nao encontrado")
+        if usuario.perfil != "admin":
+            raise HTTPException(status_code=403, detail="Apenas administradores podem assinar como locador")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado. Faca login novamente.")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token invalido")
+    loc = db.query(Locacao).filter(Locacao.id == locacao_id).first()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Locacao nao encontrada")
+    loc.locador_assinado = True
+    loc.locador_assinado_nome = usuario.nome
+    loc.locador_assinado_em = datetime.now()
+    db.commit()
+    return {"mensagem": f"Contrato assinado por {usuario.nome} em nome da LOCA MAIS CAR!"}
