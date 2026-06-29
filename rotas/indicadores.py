@@ -167,19 +167,37 @@ def evolucao_mensal(investidor_id: Optional[int] = None, tipo: Optional[str] = N
     return meses
 
 @router.get("/fluxo-caixa")
-def fluxo_caixa(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+def fluxo_caixa(investidor_id: Optional[int] = None, tipo: Optional[str] = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     hoje = date.today()
     inicio_mes = hoje.replace(day=1)
-    parcelas = db.query(Parcela).filter(
-        Parcela.data_pagamento >= inicio_mes,
-        Parcela.status.in_(["pago", "parcial"])
-    ).all()
-    despesas = db.query(Despesa).filter(
-        Despesa.data >= inicio_mes
-    ).all()
-    aportes_mes_atual = db.query(func.sum(Aporte.valor)).filter(
+    if tipo == "propria":
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == None).all()]
+    elif investidor_id:
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+    else:
+        ids_veiculos = None
+    if ids_veiculos is not None:
+        locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()]
+        parcelas = db.query(Parcela).filter(
+            Parcela.locacao_id.in_(locacao_ids),
+            Parcela.data_pagamento >= inicio_mes,
+            Parcela.status.in_(["pago", "parcial"])
+        ).all()
+        despesas = db.query(Despesa).filter(
+            Despesa.veiculo_id.in_(ids_veiculos),
+            Despesa.data >= inicio_mes
+        ).all()
+    else:
+        parcelas = db.query(Parcela).filter(
+            Parcela.data_pagamento >= inicio_mes,
+            Parcela.status.in_(["pago", "parcial"])
+        ).all()
+        despesas = db.query(Despesa).filter(
+            Despesa.data >= inicio_mes
+        ).all()
+    aportes_mes_atual = (db.query(func.sum(Aporte.valor)).filter(
         Aporte.data >= inicio_mes
-    ).scalar() or 0
+    ).scalar() or 0) if ids_veiculos is None or tipo == "propria" else 0
     entradas = sum(p.valor_pago for p in parcelas) + aportes_mes_atual
     saidas = sum(d.valor for d in despesas)
     saldo = entradas - saidas
