@@ -41,7 +41,7 @@ def resumo_financeiro(investidor_id: Optional[int] = None, tipo: Optional[str] =
         despesas_total = db.query(func.sum(Despesa.valor)).scalar() or 0
         parcelas_total = sum(f.total_pago for f in db.query(Financiamento).all())
 
-    total_aportes = db.query(func.sum(Aporte.valor)).scalar() or 0
+    total_aportes = (db.query(func.sum(Aporte.valor)).scalar() or 0) if ids_veiculos is None or tipo == "propria" else 0
     receita_total = receita_locacoes + total_aportes
     lucro_liquido = receita_total - despesas_total - parcelas_total
     return {
@@ -144,10 +144,10 @@ def evolucao_mensal(investidor_id: Optional[int] = None, tipo: Optional[str] = N
                 extract('month', Despesa.data) == mes,
                 extract('year', Despesa.data) == ano_atual
             ).scalar() or 0
-        aportes_mes = db.query(func.sum(Aporte.valor)).filter(
+        aportes_mes = (db.query(func.sum(Aporte.valor)).filter(
             extract('month', Aporte.data) == mes,
             extract('year', Aporte.data) == ano_atual
-        ).scalar() or 0
+        ).scalar() or 0) if ids_veiculos is None or tipo == "propria" else 0
         receita = receita_loc + aportes_mes
         parcelas_fin = 0
         for f in financiamentos:
