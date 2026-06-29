@@ -209,6 +209,138 @@ def fluxo_caixa(investidor_id: Optional[int] = None, tipo: Optional[str] = None,
         "situacao": "✅ Positivo" if saldo > 0 else "⚠️ Negativo" if saldo < 0 else "➡️ Neutro"
     }
 
+@router.get("/extrato-frota")
+def extrato_frota(tipo: Optional[str] = None, investidor_id: Optional[int] = None, mes: Optional[str] = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.investidor import Investidor
+    # Determinar veiculos
+    if tipo == "propria":
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == None).all()]
+        titulo = "Frota Própria"
+        comissao_pct = 0
+        investidor_nome = None
+    elif investidor_id:
+        inv = db.query(Investidor).filter(Investidor.id == investidor_id).first()
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+        titulo = inv.nome if inv else "Investidor"
+        comissao_pct = inv.percentual_comissao if inv else 0
+        investidor_nome = inv.nome if inv else None
+    else:
+        ids_veiculos = [v.id for v in db.query(Veiculo).all()]
+        titulo = "Todos"
+        comissao_pct = 0
+        investidor_nome = None
+    locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()]
+    # Filtro de mes
+    if mes:
+        ano, m = int(mes.split("-")[0]), int(mes.split("-")[1])
+    else:
+        ano, m = None, None
+    # Montar lancamentos
+    lancamentos = []
+    # Entradas: parcelas pagas
+    parcelas_q = db.query(Parcela).filter(
+        Parcela.locacao_id.in_(locacao_ids),
+        Parcela.status.in_(["pago", "parcial"])
+    )
+    if ano and m:
+        parcelas_q = parcelas_q.filter(
+            extract('month', Parcela.data_pagamento) == m,
+            extract('year', Parcela.data_pagamento) == ano
+        )
+    for p in parcelas_q.all():
+        loc = db.query(Locacao).filter(Locacao.id == p.locacao_id).first()
+        cliente = None
+        if loc:
+            from modelos.cliente import Cliente
+            cliente = db.query(Cliente).filter(Cliente.id == loc.cliente_id).first()
+        lancamentos.append({
+            "data": str(p.data_pagamento),
+            "descricao": f"Locação #{p.locacao_id} — {cliente.nome if cliente else 'Cliente'} (Parcela #{p.numero})",
+            "entrada": float(p.valor_pago),
+            "saida": 0.0,
+            "tipo": "entrada"
+        })
+    # Saidas: despesas
+    despesas_q = db.query(Despesa).filter(Despesa.veiculo_id.in_(ids_veiculos))
+    if ano and m:
+        despesas_q = despesas_q.filter(
+            extract('month', Despesa.data) == m,
+            extract('year', Despesa.data) == ano
+        )
+    for d in despesas_q.all():
+        vei = db.query(Veiculo).filter(Veiculo.id == d.veiculo_id).first()
+        lancamentos.append({
+            "data": str(d.data),
+            "descricao": f"Despesa — {d.descricao} ({vei.placa if vei else ''})",
+            "entrada": 0.0,
+            "saida": float(d.valor),
+            "tipo": "saida"
+        })
+    # Saidas: parcelas de financiamento
+    fins = db.query(Financiamento).filter(Financiamento.veiculo_id.in_(ids_veiculos)).all()
+    for f in fins:
+        for i in range(f.parcelas_pagas):
+            data_parcela = f.data_inicio + relativedelta(months=i)
+            if ano and m:
+                if data_parcela.month != m or data_parcela.year != ano:
+                    continue
+            vei = db.query(Veiculo).filter(Veiculo.id == f.veiculo_id).first()
+            lancamentos.append({
+                "data": str(data_parcela),
+                "descricao": f"Financiamento — {f.banco} ({vei.placa if vei else ''})",
+                "entrada": 0.0,
+                "saida": float(f.parcela_mensal),
+                "tipo": "saida"
+            })
+    # Aportes (so frota propria ou todos)
+    if tipo == "propria" or (tipo is None and investidor_id is None):
+        aportes_q = db.query(Aporte)
+        if ano and m:
+            aportes_q = aportes_q.filter(
+                extract('month', Aporte.data) == m,
+                extract('year', Aporte.data) == ano
+            )
+        for a in aportes_q.all():
+            lancamentos.append({
+                "data": str(a.data),
+                "descricao": f"Aporte — {a.descricao}",
+                "entrada": float(a.valor),
+                "saida": 0.0,
+                "tipo": "entrada"
+            })
+    # Ordenar por data
+    lancamentos.sort(key=lambda x: x["data"])
+    # Calcular saldo acumulado
+    total_entradas = sum(l["entrada"] for l in lancamentos)
+    total_saidas = sum(l["saida"] for l in lancamentos)
+    lucro = total_entradas - total_saidas
+    comissao = round(lucro * comissao_pct / 100, 2) if lucro > 0 and comissao_pct > 0 else 0
+    # Adicionar comissao como saida
+    if comissao > 0:
+        lancamentos.append({
+            "data": f"{ano}-{m:02d}-30" if ano and m else str(date.today()),
+            "descricao": f"Comissão {investidor_nome} ({comissao_pct}% sobre lucro R$ {lucro:.2f})",
+            "entrada": 0.0,
+            "saida": comissao,
+            "tipo": "comissao"
+        })
+    # Saldo cumulativo
+    saldo = 0.0
+    for l in lancamentos:
+        saldo += l["entrada"] - l["saida"]
+        l["saldo"] = round(saldo, 2)
+    return {
+        "titulo": titulo,
+        "investidor_nome": investidor_nome,
+        "comissao_pct": comissao_pct,
+        "lancamentos": lancamentos,
+        "total_entradas": round(total_entradas, 2),
+        "total_saidas": round(total_saidas + comissao, 2),
+        "lucro": round(lucro, 2),
+        "comissao": comissao,
+        "saldo_final": round(saldo, 2)
+    }
+
 @router.get("/dashboard-frota")
 def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     from modelos.investidor import Investidor
