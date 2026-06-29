@@ -1305,7 +1305,7 @@ function renderFinanciamentos(lista){
   document.getElementById('area-alertas').style.display='none';
   document.getElementById('area-relatorio').style.display='none';
   const tbody=document.getElementById('tabela-financiamentos');
-  const f=filtroFinanciamento==='todos'?lista:filtroFinanciamento==='ativos'?lista.filter(x=>!x.quitado):lista.filter(x=>x.quitado);
+  const f=renderFinanciamentosFiltro(lista);
   if(!f.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhum financiamento.</td></tr>';return;}
   tbody.innerHTML=f.map(fin=>`<tr>
     <td><strong>${fin.placa||'—'}</strong></td>
@@ -1325,6 +1325,7 @@ function renderFinanciamentos(lista){
 }
 
 function filtrarFinanciamentos(f,el){filtroFinanciamento=f;document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderFinanciamentos(financiamentosCache);}
+function renderFinanciamentosFiltro(lista){if(filtroFinanciamento==='todos') return lista;if(filtroFinanciamento==='ativos') return lista.filter(x=>!x.quitado);if(filtroFinanciamento==='quitados') return lista.filter(x=>x.quitado);if(filtroFinanciamento==='propria') return lista.filter(x=>!x.investidor_id);if(filtroFinanciamento==='investidor') return lista.filter(x=>!!x.investidor_id);return lista;}
 
 async function mostrarAlertas(){
   document.querySelectorAll('#page-financiamentos .tab-btn').forEach(b=>b.classList.remove('active'));
