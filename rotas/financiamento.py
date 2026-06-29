@@ -77,10 +77,10 @@ def listar_financiamentos(db: Session = Depends(get_db), usuario=Depends(verific
             "total_devido": f.total_devido,
             "quitado": f.quitado,
             "data_inicio": f.data_inicio,
-            "proxima_parcela": proxima.isoformat()
+            "proxima_parcela": proxima.isoformat(),
+            "investidor_id": f.veiculo.investidor_id if f.veiculo else None
         })
     return resultado
-
 @router.get("/alertas")
 def alertas_vencimento(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     hoje = date.today()
