@@ -98,31 +98,52 @@ def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_tok
     return sorted(resultado, key=lambda x: x["roi"], reverse=True)
 
 @router.get("/evolucao-mensal")
-def evolucao_mensal(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+def evolucao_mensal(investidor_id: Optional[int] = None, tipo: Optional[str] = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.investidor import Investidor
     ano_atual = datetime.now().year
     meses = []
     nomes_meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-    financiamentos = db.query(Financiamento).all()
+    if tipo == "propria":
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == None).all()]
+    elif investidor_id:
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+    else:
+        ids_veiculos = None
+    financiamentos = db.query(Financiamento).filter(Financiamento.veiculo_id.in_(ids_veiculos)).all() if ids_veiculos is not None else db.query(Financiamento).all()
     for mes in range(1, 13):
         inicio = date(ano_atual, mes, 1)
         if mes == 12:
             fim = date(ano_atual + 1, 1, 1) - relativedelta(days=1)
         else:
             fim = date(ano_atual, mes + 1, 1) - relativedelta(days=1)
-        receita_loc = db.query(func.sum(Parcela.valor_pago)).filter(
-            extract('month', Parcela.data_pagamento) == mes,
-            extract('year', Parcela.data_pagamento) == ano_atual,
-            Parcela.status.in_(["pago", "parcial"])
-        ).scalar() or 0
+        if ids_veiculos is not None:
+            locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()]
+            receita_loc = db.query(func.sum(Parcela.valor_pago)).filter(
+                Parcela.locacao_id.in_(locacao_ids),
+                extract('month', Parcela.data_pagamento) == mes,
+                extract('year', Parcela.data_pagamento) == ano_atual,
+                Parcela.status.in_(["pago", "parcial"])
+            ).scalar() or 0
+            despesas = db.query(func.sum(Despesa.valor)).filter(
+                Despesa.veiculo_id.in_(ids_veiculos),
+                extract('month', Despesa.data) == mes,
+                extract('year', Despesa.data) == ano_atual
+            ).scalar() or 0
+        else:
+            receita_loc = db.query(func.sum(Parcela.valor_pago)).filter(
+                extract('month', Parcela.data_pagamento) == mes,
+                extract('year', Parcela.data_pagamento) == ano_atual,
+                Parcela.status.in_(["pago", "parcial"])
+            ).scalar() or 0
+            despesas = db.query(func.sum(Despesa.valor)).filter(
+                extract('month', Despesa.data) == mes,
+                extract('year', Despesa.data) == ano_atual
+            ).scalar() or 0
         aportes_mes = db.query(func.sum(Aporte.valor)).filter(
             extract('month', Aporte.data) == mes,
             extract('year', Aporte.data) == ano_atual
         ).scalar() or 0
         receita = receita_loc + aportes_mes
-        despesas = db.query(func.sum(Despesa.valor)).filter(
-            extract('month', Despesa.data) == mes,
-            extract('year', Despesa.data) == ano_atual
-        ).scalar() or 0
         parcelas_fin = 0
         for f in financiamentos:
             meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
