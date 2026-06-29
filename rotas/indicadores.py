@@ -310,21 +310,67 @@ def extrato_frota(tipo: Optional[str] = None, investidor_id: Optional[int] = Non
             })
     # Ordenar por data
     lancamentos.sort(key=lambda x: x["data"])
-    # Calcular saldo acumulado
+    # Calcular lucro do mes corrente (para comissao)
     total_entradas = sum(l["entrada"] for l in lancamentos)
     total_saidas = sum(l["saida"] for l in lancamentos)
-    lucro = total_entradas - total_saidas
-    comissao = round(lucro * comissao_pct / 100, 2) if lucro > 0 and comissao_pct > 0 else 0
-    # Adicionar comissao como saida
+    lucro_mes = total_entradas - total_saidas
+    comissao = round(lucro_mes * comissao_pct / 100, 2) if lucro_mes > 0 and comissao_pct > 0 else 0
+    # Calcular saldo anterior (meses anteriores ao filtro)
+    saldo_anterior = 0.0
+    if ano and m:
+        # Buscar todos lancamentos antes do mes filtrado
+        lanc_anteriores = []
+        # Parcelas pagas antes do mes
+        parcelas_ant = db.query(Parcela).filter(
+            Parcela.locacao_id.in_(locacao_ids),
+            Parcela.status.in_(["pago", "parcial"]),
+            extract('year', Parcela.data_pagamento) * 12 + extract('month', Parcela.data_pagamento) < ano * 12 + m
+        ).all()
+        for p in parcelas_ant:
+            saldo_anterior += float(p.valor_pago)
+        # Despesas antes do mes
+        desp_ant = db.query(Despesa).filter(
+            Despesa.veiculo_id.in_(ids_veiculos),
+            extract('year', Despesa.data) * 12 + extract('month', Despesa.data) < ano * 12 + m
+        ).all()
+        for d in desp_ant:
+            saldo_anterior -= float(d.valor)
+        # Parcelas financiamento antes do mes
+        for f in fins:
+            for i in range(f.parcelas_pagas):
+                data_parcela = f.data_inicio + relativedelta(months=i)
+                if data_parcela.year * 12 + data_parcela.month < ano * 12 + m:
+                    saldo_anterior -= float(f.parcela_mensal)
+        # Aportes antes do mes (so frota propria ou todos)
+        if tipo == "propria" or (tipo is None and investidor_id is None):
+            ap_ant = db.query(Aporte).filter(
+                extract('year', Aporte.data) * 12 + extract('month', Aporte.data) < ano * 12 + m
+            ).all()
+            for a in ap_ant:
+                saldo_anterior += float(a.valor)
+        saldo_anterior = round(saldo_anterior, 2)
+    # Inserir linha de saldo anterior no inicio
+    if ano and m and saldo_anterior != 0:
+        mes_ant = m - 1 if m > 1 else 12
+        ano_ant = ano if m > 1 else ano - 1
+        nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+        lancamentos.insert(0, {
+            "data": f"{ano}-{m:02d}-01",
+            "descricao": f"Saldo anterior ({nomes[mes_ant-1]}/{ano_ant})",
+            "entrada": saldo_anterior if saldo_anterior > 0 else 0.0,
+            "saida": abs(saldo_anterior) if saldo_anterior < 0 else 0.0,
+            "tipo": "saldo_anterior"
+        })
+    # Adicionar comissao como saida (baseada no lucro do mes, nao no saldo anterior)
     if comissao > 0:
         lancamentos.append({
             "data": f"{ano}-{m:02d}-30" if ano and m else str(date.today()),
-            "descricao": f"Comissão {investidor_nome} ({comissao_pct}% sobre lucro R$ {lucro:.2f})",
+            "descricao": f"Comissao {investidor_nome} ({comissao_pct}% sobre lucro do mes R$ {lucro_mes:.2f})",
             "entrada": 0.0,
             "saida": comissao,
             "tipo": "comissao"
         })
-    # Saldo cumulativo
+    # Saldo cumulativo partindo do saldo anterior
     saldo = 0.0
     for l in lancamentos:
         saldo += l["entrada"] - l["saida"]
@@ -336,11 +382,10 @@ def extrato_frota(tipo: Optional[str] = None, investidor_id: Optional[int] = Non
         "lancamentos": lancamentos,
         "total_entradas": round(total_entradas, 2),
         "total_saidas": round(total_saidas + comissao, 2),
-        "lucro": round(lucro, 2),
+        "lucro": round(lucro_mes, 2),
         "comissao": comissao,
         "saldo_final": round(saldo, 2)
     }
-
 @router.get("/dashboard-frota")
 def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     from modelos.investidor import Investidor
