@@ -53,8 +53,13 @@ def resumo_financeiro(investidor_id: Optional[int] = None, tipo: Optional[str] =
     }
 
 @router.get("/roi-por-veiculo")
-def roi_por_veiculo(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
-    veiculos = db.query(Veiculo).all()
+def roi_por_veiculo(investidor_id: Optional[int] = None, tipo: Optional[str] = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    if tipo == "propria":
+        veiculos = db.query(Veiculo).filter(Veiculo.investidor_id == None).all()
+    elif investidor_id:
+        veiculos = db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()
+    else:
+        veiculos = db.query(Veiculo).all()
     resultado = []
     hoje = date.today()
     ano_atual = hoje.year
