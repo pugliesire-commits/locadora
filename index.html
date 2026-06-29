@@ -175,6 +175,7 @@
         <div class="nav-item" onclick="mostrarPagina('financiamentos',this)">&#9670; Financiamentos</div>
         <div class="nav-item" onclick="mostrarPagina('despesas',this)">&#9650; Despesas</div>
         <div class="nav-item" onclick="mostrarPagina('indicadores',this)">&#9670; Indicadores</div>
+<div class="nav-item" onclick="mostrarPagina('extrato-frota',this)">📋 Extrato por Frota</div>
 <div class="nav-item" onclick="mostrarPagina('aportes',this)">💰 Aportes</div>
       <div class="nav-section">RELATÓRIOS</div>
 <div class="nav-item" onclick="mostrarPagina('relatorio',this)">📊 Fluxo & DRE</div>
@@ -360,6 +361,21 @@
             <table><thead><tr><th>Placa</th><th>Modelo</th><th>Receita</th><th>Despesas</th><th>Parcelas</th><th>Lucro</th><th>ROI</th><th>Situação</th></tr></thead>
             <tbody id="tabela-roi"></tbody></table>
           </div>
+        </div>
+
+       <!-- EXTRATO FROTA -->
+        <div id="page-extrato-frota" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <label style="color:var(--gray);font-size:13px">Mês:</label>
+            <input type="month" id="filtro-mes-extrato-frota" class="select-input" style="width:180px"/>
+            <select id="filtro-tipo-extrato-frota" class="select-input" style="width:220px">
+              <option value="">Todos</option>
+              <option value="propria">🚗 Frota Própria</option>
+            </select>
+            <button class="btn-save" onclick="carregarExtratoFrota()">🔍 Buscar</button>
+            <button class="btn-cancel" onclick="imprimirExtratoFrota()">🖨️ Imprimir</button>
+          </div>
+          <div id="area-extrato-frota"><div class="empty-state">Selecione um filtro e clique em Buscar.</div></div>
         </div>
 
        <!-- RELATÓRIO -->
@@ -901,6 +917,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'financiamentos') carregarFinanciamentos();
   else if (nome === 'despesas') {document.getElementById('filtro-mes-despesas').value=new Date().toISOString().slice(0,7);carregarDespesas();}
   else if (nome === 'indicadores') {carregarTabsIndicadores();carregarIndicadores();}
+  else if (nome === 'extrato-frota') {carregarSelectsExtratoFrota();document.getElementById('filtro-mes-extrato-frota').value=new Date().toISOString().slice(0,7);}
   else if (nome === 'usuarios') carregarUsuarios();
   else if (nome === 'contratos') carregarContratos();
   else if (nome === 'investidores') carregarInvestidores();
@@ -1752,7 +1769,100 @@ async function carregarContratos(){
     </tr>`).join('');
   }catch(e){console.error(e);}
 }
- /* ===== HELPERS ===== */
+ /* ===== EXTRATO FROTA ===== */
+async function carregarSelectsExtratoFrota(){
+  try{
+    const[rv,ri]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/investidores/',auth())]);
+    const veiculos=await rv.json();
+    const investidores=await ri.json();
+    const sel=document.getElementById('filtro-tipo-extrato-frota');
+    const temPropria=veiculos.some(v=>!v.investidor_id);
+    sel.innerHTML='<option value="">Todos</option>';
+    if(temPropria) sel.innerHTML+='<option value="propria">🚗 Frota Própria</option>';
+    investidores.forEach(i=>{sel.innerHTML+=`<option value="inv_${i.id}">👥 ${i.nome}</option>`;});
+  }catch(e){console.error(e);}
+}
+
+async function carregarExtratoFrota(){
+  const mes=document.getElementById('filtro-mes-extrato-frota').value;
+  const tipo=document.getElementById('filtro-tipo-extrato-frota').value;
+  let params='';
+  if(mes) params+='?mes='+mes;
+  if(tipo==='propria') params+=(params?'&':'?')+'tipo=propria';
+  else if(tipo.startsWith('inv_')) params+=(params?'&':'?')+'investidor_id='+tipo.replace('inv_','');
+  const area=document.getElementById('area-extrato-frota');
+  area.innerHTML='<div class="empty-state">Carregando...</div>';
+  try{
+    const res=await fetch(API+'/indicadores/extrato-frota'+params,auth());
+    const data=await res.json();
+    if(!data.lancamentos.length){area.innerHTML='<div class="empty-state">Nenhum lançamento encontrado.</div>';return;}
+    const mesLabel=mes?mes.split('-').reverse().join('/'):'Todos os meses';
+    area.innerHTML=`
+      <div id="extrato-frota-print">
+        <div style="background:var(--darker);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:4px">📋 Extrato — ${data.titulo}</div>
+            <div style="font-size:12px;color:var(--gray)">Período: ${mesLabel}</div>
+            ${data.comissao_pct>0?`<div style="font-size:12px;color:var(--warning)">Comissão: ${data.comissao_pct}%</div>`:''}
+          </div>
+          <div style="display:flex;gap:24px">
+            <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--green)">R$ ${data.total_entradas.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Total Entradas</div></div>
+            <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--danger)">R$ ${data.total_saidas.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Total Saídas</div></div>
+            <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:${data.saldo_final>=0?'var(--green)':'var(--danger)'}">R$ ${data.saldo_final.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Saldo Final</div></div>
+            ${data.comissao>0?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--warning)">R$ ${data.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:var(--gray);text-transform:uppercase">Comissão</div></div>`:''}
+          </div>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Data</th><th>Descrição</th><th style="color:var(--green)">Entrada</th><th style="color:var(--danger)">Saída</th><th>Saldo</th></tr></thead>
+            <tbody>
+              ${data.lancamentos.map(l=>{
+                const corSaldo=l.saldo>=0?'var(--green)':'var(--danger)';
+                const corTipo=l.tipo==='entrada'?'var(--green)':l.tipo==='comissao'?'var(--warning)':'var(--danger)';
+                return `<tr>
+                  <td style="color:var(--gray);font-size:12px">${formatData(l.data)}</td>
+                  <td style="font-size:12px">${l.descricao}</td>
+                  <td style="color:var(--green);font-weight:${l.entrada>0?'700':'400'}">${l.entrada>0?'R$ '+l.entrada.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
+                  <td style="color:${corTipo};font-weight:${l.saida>0?'700':'400'}">${l.saida>0?'R$ '+l.saida.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
+                  <td style="color:${corSaldo};font-weight:700">R$ ${l.saldo.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }catch(e){area.innerHTML='<div class="empty-state">Erro ao carregar.</div>';console.error(e);}
+}
+
+function imprimirExtratoFrota(){
+  const conteudo=document.getElementById('extrato-frota-print');
+  if(!conteudo){showToast('Gere o extrato primeiro.','var(--warning)');return;}
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#fff;color:#111;padding:32px}
+    h2{font-size:20px;margin-bottom:4px}
+    p{font-size:12px;color:#666;margin-bottom:20px}
+    .resumo{display:flex;gap:32px;margin-bottom:24px;padding:16px;background:#f5f5f5;border-radius:8px}
+    .resumo div{text-align:center}
+    .resumo .val{font-size:18px;font-weight:700}
+    .resumo .lab{font-size:10px;color:#888;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:#f0f0f0;padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666}
+    tbody td{padding:9px 12px;border-bottom:1px solid #eee}
+    .verde{color:#2d7a00;font-weight:700}
+    .vermelho{color:#cc0000;font-weight:700}
+    .amarelo{color:#996600;font-weight:700}
+    .saldo-pos{color:#2d7a00;font-weight:700}
+    .saldo-neg{color:#cc0000;font-weight:700}
+  </style></head><body>
+  ${conteudo.innerHTML}
+  </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+/* ===== HELPERS ===== */
 function badgePerfil(p){const m={admin:'badge-purple',atendente:'badge-blue',financeiro:'badge-yellow'};const l={admin:'Admin',atendente:'Atendente',financeiro:'Financeiro'};return`<span class="badge ${m[p]||'badge-gray'}">${l[p]||p}</span>`;}
 function formatCategoria(c){const m={manutencao:'🔧 Manutenção',combustivel:'🛢️ Combustível',lavagem:'🧼 Lavagem',salarios:'👨‍💼 Salários',contas:'💡 Contas',aluguel:'🏢 Aluguel',seguro:'🛡️ Seguro',ipva_licenciamento:'📋 IPVA/Licenc.',pecas:'📦 Peças',outros:'📌 Outros'};return m[c]||c;}
 function badgeStatus(s){const m={'Disponível':'green','Ativa':'green','Alugado':'yellow','Pendente':'yellow','Encerrada':'gray','Paga':'blue','Concluída':'gray'};return`<span class="badge badge-${m[s]||'gray'}">${s}</span>`;}
