@@ -348,6 +348,34 @@ def extrato_frota(tipo: Optional[str] = None, investidor_id: Optional[int] = Non
             ).all()
             for a in ap_ant:
                 saldo_anterior += float(a.valor)
+        # Descontar comissoes dos meses anteriores
+        if comissao_pct > 0:
+            for mes_i in range(1, ano * 12 + m):
+                ano_i = (mes_i - 1) // 12 + 1
+                m_i = (mes_i - 1) % 12 + 1
+                # Receita do mes_i
+                rec_i = db.query(func.sum(Parcela.valor_pago)).filter(
+                    Parcela.locacao_id.in_(locacao_ids),
+                    Parcela.status.in_(["pago", "parcial"]),
+                    extract('year', Parcela.data_pagamento) == ano_i,
+                    extract('month', Parcela.data_pagamento) == m_i
+                ).scalar() or 0
+                # Despesas do mes_i
+                desp_i = db.query(func.sum(Despesa.valor)).filter(
+                    Despesa.veiculo_id.in_(ids_veiculos),
+                    extract('year', Despesa.data) == ano_i,
+                    extract('month', Despesa.data) == m_i
+                ).scalar() or 0
+                # Financiamentos do mes_i
+                fin_i = 0.0
+                for f in fins:
+                    dp = f.data_inicio + relativedelta(months=((ano_i - f.data_inicio.year) * 12 + (m_i - f.data_inicio.month)))
+                    meses_d = (ano_i - f.data_inicio.year) * 12 + (m_i - f.data_inicio.month)
+                    if 0 <= meses_d < f.parcelas_pagas and dp.month == m_i and dp.year == ano_i:
+                        fin_i += float(f.parcela_mensal)
+                lucro_i = float(rec_i) - float(desp_i) - fin_i
+                if lucro_i > 0:
+                    saldo_anterior -= round(lucro_i * comissao_pct / 100, 2)
         saldo_anterior = round(saldo_anterior, 2)
     # Inserir linha de saldo anterior no inicio
     if ano and m and saldo_anterior != 0:
