@@ -335,6 +335,9 @@
 
         <!-- INDICADORES -->
         <div id="page-indicadores" style="display:none">
+          <div class="tabs-bar" id="tabs-indicadores">
+            <button class="tab-btn active" onclick="filtrarIndicadores('todos',this)">Todos</button>
+          </div>
           <div class="stats-grid">
             <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value accent" id="ind-receita">—</div></div>
             <div class="stat-card"><div class="stat-label">Despesas Total</div><div class="stat-value" style="color:var(--danger)" id="ind-despesas">—</div></div>
@@ -897,7 +900,7 @@ function mostrarPagina(nome, el) {
   }
   else if (nome === 'financiamentos') carregarFinanciamentos();
   else if (nome === 'despesas') {document.getElementById('filtro-mes-despesas').value=new Date().toISOString().slice(0,7);carregarDespesas();}
-  else if (nome === 'indicadores') carregarIndicadores();
+  else if (nome === 'indicadores') {carregarTabsIndicadores();carregarIndicadores();}
   else if (nome === 'usuarios') carregarUsuarios();
   else if (nome === 'contratos') carregarContratos();
   else if (nome === 'investidores') carregarInvestidores();
@@ -1446,7 +1449,43 @@ async function salvarDespesa(){const veiculoId=document.getElementById('d-veicul
 async function excluirDespesa(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir?'))return;try{await fetch(API+'/despesas/'+id,{method:'DELETE',...auth()});showToast('Despesa excluída.');carregarDespesas();}catch{showToast('Erro.','var(--danger)');}}
 
 /* ===== INDICADORES ===== */
-async function carregarIndicadores(){try{const[rr,rf]=await Promise.all([fetch(API+'/indicadores/resumo',auth()),fetch(API+'/indicadores/fluxo-caixa',auth())]);const resumo=await rr.json(),fluxo=await rf.json();document.getElementById('ind-receita').textContent='R$ '+resumo.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-despesas').textContent='R$ '+resumo.despesas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-parcelas').textContent='R$ '+resumo.parcelas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});const lucro=resumo.lucro_liquido;document.getElementById('ind-lucro').textContent='R$ '+lucro.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-lucro').style.color=lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-margem').textContent=resumo.margem_lucro+'%';document.getElementById('ind-margem').style.color=resumo.margem_lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-entradas').textContent='R$ '+fluxo.entradas.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saidas').textContent='R$ '+fluxo.saidas.toLocaleString('pt-BR',{minimumFractionDigits:2});const saldo=fluxo.saldo;document.getElementById('ind-saldo').textContent='R$ '+saldo.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saldo').style.color=saldo>=0?'var(--green)':'var(--danger)';}catch(e){console.error(e);}try{const re=await fetch(API+'/indicadores/evolucao-mensal',auth());const evolucao=await re.json();document.getElementById('ind-ano').textContent=new Date().getFullYear();document.getElementById('tabela-evolucao').innerHTML=evolucao.map(m=>`<tr><td><strong>${m.mes}</strong></td><td style="color:var(--green)">R$ ${m.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${m.despesas.toFixed(2)}</td><td style="color:var(--warning)">R$ ${(m.financiamentos||0).toFixed(2)}</td><td style="color:${m.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${m.lucro.toFixed(2)}</strong></td></tr>`).join('');}catch(e){console.error(e);}try{const rv=await fetch(API+'/indicadores/roi-por-veiculo',auth());const roi=await rv.json();const tbody=document.getElementById('tabela-roi');if(!roi.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum dado.</td></tr>';return;}tbody.innerHTML=roi.map(r=>`<tr><td><strong>${r.placa}</strong></td><td>${r.marca} ${r.modelo}</td><td style="color:var(--green)">R$ ${r.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${r.despesas.toFixed(2)}</td><td style="color:var(--warning)">R$ ${r.parcelas.toFixed(2)}</td><td style="color:${r.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${r.lucro.toFixed(2)}</strong></td><td style="color:${r.roi>=0?'var(--green)':'var(--danger)'};font-weight:700">${r.roi}%</td><td>${r.situacao}</td></tr>`).join('');}catch(e){console.error(e);}}
+let filtroIndicador = {tipo: null, investidor_id: null};
+
+async function carregarTabsIndicadores(){
+  try{
+    const res=await fetch(API+'/veiculos/',auth());
+    const veiculos=await res.json();
+    const temInvestidor=veiculos.some(v=>v.investidor_id);
+    const temPropria=veiculos.some(v=>!v.investidor_id);
+    const invIds=[...new Set(veiculos.filter(v=>v.investidor_id).map(v=>v.investidor_id))];
+    const tabs=document.getElementById('tabs-indicadores');
+    let html='<button class="tab-btn active" onclick="filtrarIndicadores(\'todos\',null,this)">Todos</button>';
+    if(temPropria) html+='<button class="tab-btn" onclick="filtrarIndicadores(\'propria\',null,this)">🚗 Frota Própria</button>';
+    for(const id of invIds){
+      const inv=veiculos.find(v=>v.investidor_id===id);
+      html+=`<button class="tab-btn" onclick="filtrarIndicadores('investidor',${id},this)">👥 Investidor #${id}</button>`;
+    }
+    tabs.innerHTML=html;
+    // Carregar nomes dos investidores
+    const ri=await fetch(API+'/investidores/',auth());
+    const investidores=await ri.json();
+    tabs.querySelectorAll('[onclick*="investidor"]').forEach(btn=>{
+      const match=btn.getAttribute('onclick').match(/filtrarIndicadores\('investidor',(\d+)/);
+      if(match){const inv=investidores.find(i=>i.id===parseInt(match[1]));if(inv)btn.textContent='👥 '+inv.nome;}
+    });
+  }catch(e){console.error(e);}
+}
+
+function filtrarIndicadores(tipo, investidor_id, el){
+  filtroIndicador={tipo, investidor_id};
+  document.querySelectorAll('#tabs-indicadores .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  carregarIndicadores();
+}
+
+async function carregarIndicadores(){
+  const params=filtroIndicador.tipo==='propria'?'?tipo=propria':filtroIndicador.investidor_id?'?investidor_id='+filtroIndicador.investidor_id:'';
+  try{const[rr,rf]=await Promise.all([fetch(API+'/indicadores/resumo'+params,auth()),fetch(API+'/indicadores/fluxo-caixa',auth())]);const resumo=await rr.json(),fluxo=await rf.json();document.getElementById('ind-receita').textContent='R$ '+resumo.receita_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-despesas').textContent='R$ '+resumo.despesas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-parcelas').textContent='R$ '+resumo.parcelas_total.toLocaleString('pt-BR',{minimumFractionDigits:2});const lucro=resumo.lucro_liquido;document.getElementById('ind-lucro').textContent='R$ '+lucro.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-lucro').style.color=lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-margem').textContent=resumo.margem_lucro+'%';document.getElementById('ind-margem').style.color=resumo.margem_lucro>=0?'var(--green)':'var(--danger)';document.getElementById('ind-entradas').textContent='R$ '+fluxo.entradas.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saidas').textContent='R$ '+fluxo.saidas.toLocaleString('pt-BR',{minimumFractionDigits:2});const saldo=fluxo.saldo;document.getElementById('ind-saldo').textContent='R$ '+saldo.toLocaleString('pt-BR',{minimumFractionDigits:2});document.getElementById('ind-saldo').style.color=saldo>=0?'var(--green)':'var(--danger)';}catch(e){console.error(e);}try{const re=await fetch(API+'/indicadores/evolucao-mensal'+params,auth());const evolucao=await re.json();document.getElementById('ind-ano').textContent=new Date().getFullYear();document.getElementById('tabela-evolucao').innerHTML=evolucao.map(m=>`<tr><td><strong>${m.mes}</strong></td><td style="color:var(--green)">R$ ${m.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${m.despesas.toFixed(2)}</td><td style="color:var(--warning)">R$ ${(m.financiamentos||0).toFixed(2)}</td><td style="color:${m.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${m.lucro.toFixed(2)}</strong></td></tr>`).join('');}catch(e){console.error(e);}try{const rv=await fetch(API+'/indicadores/roi-por-veiculo'+params,auth());const roi=await rv.json();const tbody=document.getElementById('tabela-roi');if(!roi.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum dado.</td></tr>';return;}tbody.innerHTML=roi.map(r=>`<tr><td><strong>${r.placa}</strong></td><td>${r.marca} ${r.modelo}</td><td style="color:var(--green)">R$ ${r.receita.toFixed(2)}</td><td style="color:var(--danger)">R$ ${r.despesas.toFixed(2)}</td><td style="color:var(--warning)">R$ ${r.parcelas.toFixed(2)}</td><td style="color:${r.lucro>=0?'var(--green)':'var(--danger)'}"><strong>R$ ${r.lucro.toFixed(2)}</strong></td><td style="color:${r.roi>=0?'var(--green)':'var(--danger)'};font-weight:700">${r.roi}%</td><td>${r.situacao}</td></tr>`).join('');}catch(e){console.error(e);}}
 
 /* ===== USUÁRIOS ===== */
 async function carregarUsuarios(){try{const res=await fetch(API+'/auth/usuarios',auth());if(!res.ok){document.getElementById('tabela-usuarios').innerHTML='<tr><td colspan="5" class="empty-state">Sem permissão.</td></tr>';return;}const usuarios=await res.json();const tbody=document.getElementById('tabela-usuarios');tbody.innerHTML=usuarios.map(u=>`<tr><td><strong>${u.nome}</strong></td><td>${u.email}</td><td>${badgePerfil(u.perfil)}</td><td>${u.ativo?'<span class="badge badge-green">Ativo</span>':'<span class="badge badge-red">Inativo</span>'}</td><td>${u.perfil!=='admin'?`<button class="action-btn" onclick="toggleUsuario(${u.id})">${u.ativo?'Desativar':'Ativar'}</button><button class="action-btn danger" onclick="excluirUsuario(${u.id})">Excluir</button>`:'<span style="color:var(--gray);font-size:11px">Protegido</span>'}</td></tr>`).join('');}catch{}}
