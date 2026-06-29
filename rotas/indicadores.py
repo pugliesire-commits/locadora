@@ -11,18 +11,38 @@ from modelos.aporte import Aporte
 from modelos.seguranca import verificar_token
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
+from typing import Optional
 
 router = APIRouter(prefix="/indicadores", tags=["Indicadores"])
 
 @router.get("/resumo")
-def resumo_financeiro(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
-    receita_locacoes = db.query(func.sum(Parcela.valor_pago)).filter(
-        Parcela.status.in_(["pago", "parcial"])
-    ).scalar() or 0
+def resumo_financeiro(investidor_id: Optional[int] = None, tipo: Optional[str] = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.investidor import Investidor
+    from fastapi import Query
+    # Determinar IDs de veiculos filtrados
+    if tipo == "propria":
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == None).all()]
+    elif investidor_id:
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+    else:
+        ids_veiculos = None  # sem filtro = todos
+
+    if ids_veiculos is not None:
+        locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()]
+        receita_locacoes = db.query(func.sum(Parcela.valor_pago)).filter(
+            Parcela.locacao_id.in_(locacao_ids),
+            Parcela.status.in_(["pago", "parcial"])
+        ).scalar() or 0
+        despesas_total = db.query(func.sum(Despesa.valor)).filter(Despesa.veiculo_id.in_(ids_veiculos)).scalar() or 0
+        parcelas_total = sum(f.total_pago for f in db.query(Financiamento).filter(Financiamento.veiculo_id.in_(ids_veiculos)).all())
+    else:
+        locacao_ids = None
+        receita_locacoes = db.query(func.sum(Parcela.valor_pago)).filter(Parcela.status.in_(["pago", "parcial"])).scalar() or 0
+        despesas_total = db.query(func.sum(Despesa.valor)).scalar() or 0
+        parcelas_total = sum(f.total_pago for f in db.query(Financiamento).all())
+
     total_aportes = db.query(func.sum(Aporte.valor)).scalar() or 0
     receita_total = receita_locacoes + total_aportes
-    despesas_total = db.query(func.sum(Despesa.valor)).scalar() or 0
-    parcelas_total = sum(f.total_pago for f in db.query(Financiamento).all())
     lucro_liquido = receita_total - despesas_total - parcelas_total
     return {
         "receita_total": receita_total,
