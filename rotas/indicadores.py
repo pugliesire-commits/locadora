@@ -114,7 +114,8 @@ def evolucao_mensal(db: Session = Depends(get_db), usuario=Depends(verificar_tok
             "mes": nomes_meses[mes-1],
             "numero": mes,
             "receita": receita,
-            "despesas": despesas + parcelas_fin,
+            "despesas": despesas,
+            "financiamentos": parcelas_fin,
             "lucro": receita - despesas - parcelas_fin
         })
     return meses
