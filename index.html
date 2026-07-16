@@ -645,6 +645,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-devolver">
+  <div class="modal">
+    <div class="modal-title">Devolver Veículo</div>
+    <div class="modal-grid">
+      <div class="field full"><label>Data em que recolhi o carro</label><input id="dev-data" type="date"/></div>
+      <div class="field full"><div style="background:var(--darker);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--gray)">As parcelas com vencimento depois desta data serão removidas. O que já venceu e não foi pago continua pendente.</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-devolver')">Cancelar</button>
+      <button class="btn-save" onclick="confirmarDevolucao()">Confirmar Devolução</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-extra">
   <div class="modal">
     <div class="modal-title">Adicionar Cobrança Extra</div>
@@ -1131,7 +1145,9 @@ async function salvarLocacao(){
   if(!body.cliente_id||!body.veiculo_id||!body.data_inicio||!body.data_fim||!body.valor_periodo){showToast('Preencha todos os campos.','var(--warning)');return;}
   try{const res=await fetch(API+'/locacoes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();const data=await res.json();fecharModal('modal-locacao');showToast(`✓ Locação criada! ${data.periodo} — R$ ${data.valor_total?.toFixed(2)}`);await carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}
 }
-async function devolverVeiculo(id){if(!confirm('Confirmar devolução do veículo?'))return;try{const res=await fetch(API+'/locacoes/'+id+'/devolver',{method:'PUT',...auth()});if(!res.ok)throw new Error();const data=await res.json();showToast('✓ Veículo devolvido! '+(data.dias_atraso>0?'Atraso: '+data.dias_atraso+' dia(s)':'Sem atraso'));carregarLocacoes();carregarDashboard();}catch{showToast('Erro ao devolver.','var(--danger)');}}
+let devolverLocacaoId=null;
+async function devolverVeiculo(id){devolverLocacaoId=id;document.getElementById('dev-data').value=new Date().toISOString().split('T')[0];document.getElementById('modal-devolver').classList.add('open');}
+async function confirmarDevolucao(){const data=document.getElementById('dev-data').value;if(!data){showToast('Escolha a data de recolhimento.','var(--warning)');return;}try{const res=await fetch(API+'/locacoes/'+devolverLocacaoId+'/devolver',{method:'PUT',body:JSON.stringify({data_recolhimento:data}),...auth()});if(!res.ok)throw new Error();const r=await res.json();fecharModal('modal-devolver');showToast('✓ Veículo devolvido!'+(r.parcelas_futuras_removidas>0?' '+r.parcelas_futuras_removidas+' parcela(s) futura(s) removida(s).':''));carregarLocacoes();carregarDashboard();}catch{showToast('Erro ao devolver.','var(--danger)');}}
 async function excluirLocacao(id){if(!podeExcluir()){showToast('Sem permissão.','var(--danger)');return;}if(!confirm('Excluir esta locação e todas as parcelas?'))return;try{const res=await fetch(API+'/locacoes/'+id,{method:'DELETE',...auth()});if(!res.ok)throw new Error();showToast('Locação excluída.');await carregarLocacoes();carregarDashboard();}catch{showToast('Erro ao excluir.','var(--danger)');}}
 
 function abrirExtra(locacaoId){locacaoSelecionada=locacaoId;document.getElementById('modal-extra').classList.add('open');}
