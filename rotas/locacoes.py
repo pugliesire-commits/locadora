@@ -152,27 +152,30 @@ def buscar_locacao(id: int, db: Session = Depends(get_db)):
     return locacao
 
 @router.put("/{id}/devolver")
-def devolver_veiculo(id: int, db: Session = Depends(get_db)):
+def devolver_veiculo(id: int, dados: Optional[dict] = None, db: Session = Depends(get_db)):
     locacao = db.query(Locacao).filter(Locacao.id == id).first()
     if not locacao:
         raise HTTPException(status_code=404, detail="Locação não encontrada")
     if locacao.status != "Ativa":
         raise HTTPException(status_code=400, detail="Locação não está ativa")
-    hoje = datetime.today()
-    fim = datetime.strptime(locacao.data_fim, "%Y-%m-%d")
-    atraso = max(0, (hoje - fim).days)
-    multa = atraso * locacao.valor_diaria * 1.5
+    dados = dados or {}
+    data_str = dados.get("data_recolhimento") or datetime.today().strftime("%Y-%m-%d")
+    data_recolhimento = datetime.strptime(data_str, "%Y-%m-%d").date()
+    removidas = db.query(Parcela).filter(
+        Parcela.locacao_id == id,
+        Parcela.status == "pendente",
+        Parcela.data_vencimento > data_recolhimento
+    ).delete()
+    locacao.data_fim = data_str
     locacao.status = "Concluída"
-    valor_final = locacao.valor_total + multa
     veiculo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
     if veiculo:
         veiculo.status = "Disponível"
     db.commit()
     return {
         "mensagem": "Devolução registrada com sucesso",
-        "dias_atraso": atraso,
-        "multa": multa,
-        "valor_final": valor_final
+        "data_recolhimento": data_str,
+        "parcelas_futuras_removidas": removidas
     }
 
 @router.delete("/{id}")
