@@ -162,26 +162,23 @@ def dre_mensal(ano: int = None, db: Session = Depends(get_db), usuario=Depends(v
     return {"ano": ano, "meses": meses}
 
 @router.get("/projecao")
-def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+def projecao_6_meses(tipo: str = None, investidor_id: int = None, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.veiculo import Veiculo
     hoje = date.today()
 
-    total_desp_3m = 0
-    meses_com_despesa = 0
-    for i in range(1, 4):
-        mes_ant = hoje - relativedelta(months=i)
-        inicio_ant = date(mes_ant.year, mes_ant.month, 1)
-        if mes_ant.month == 12:
-            fim_ant = date(mes_ant.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            fim_ant = date(mes_ant.year, mes_ant.month + 1, 1) - timedelta(days=1)
-        desp = db.query(func.sum(Despesa.valor)).filter(
-            Despesa.data >= inicio_ant,
-            Despesa.data <= fim_ant
-        ).scalar() or 0
-        if desp > 0:
-            total_desp_3m += desp
-            meses_com_despesa += 1
-    media_despesas = round(total_desp_3m / meses_com_despesa, 2) if meses_com_despesa > 0 else 0
+    proprios = db.query(Veiculo).filter(Veiculo.investidor_id == None).all()
+    num_proprios = len(proprios)
+    if tipo == "propria":
+        ids_veiculos = [v.id for v in proprios]
+        rateia_gerais = True
+    elif investidor_id:
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+        rateia_gerais = False
+    else:
+        ids_veiculos = [v.id for v in db.query(Veiculo).all()]
+        rateia_gerais = True
+
+    locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()] if ids_veiculos else []
 
     projecao = []
     for i in range(6):
@@ -192,30 +189,52 @@ def projecao_6_meses(db: Session = Depends(get_db), usuario=Depends(verificar_to
         else:
             fim = date(mes_ref.year, mes_ref.month + 1, 1) - timedelta(days=1)
 
-        receita_prev = db.query(func.sum(Parcela.valor)).filter(
-            Parcela.data_vencimento >= inicio,
-            Parcela.data_vencimento <= fim,
-            Parcela.status.in_(["pendente", "parcial"])
-        ).scalar() or 0
+        receita_prev = 0
+        if locacao_ids:
+            receita_prev = db.query(func.sum(Parcela.valor)).filter(
+                Parcela.locacao_id.in_(locacao_ids),
+                Parcela.data_vencimento >= inicio,
+                Parcela.data_vencimento <= fim
+            ).scalar() or 0
+
+        despesas_prev = 0
+        if ids_veiculos:
+            despesas_prev = db.query(func.sum(Despesa.valor)).filter(
+                Despesa.veiculo_id.in_(ids_veiculos),
+                Despesa.data >= inicio,
+                Despesa.data <= fim
+            ).scalar() or 0
+
+        gerais_prev = 0
+        if rateia_gerais:
+            total_geral = db.query(func.sum(Despesa.valor)).filter(
+                Despesa.veiculo_id == None,
+                Despesa.data >= inicio,
+                Despesa.data <= fim
+            ).scalar() or 0
+            if tipo == "propria" or (not tipo and not investidor_id):
+                gerais_prev = float(total_geral)
 
         fin_prev = 0
-        financiamentos = db.query(Financiamento).filter(
-            Financiamento.parcelas_pagas < Financiamento.total_parcelas
-        ).all()
-        for f in financiamentos:
-            meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
-            if meses_desde_inicio >= 0 and meses_desde_inicio < f.parcelas_restantes:
-                proxima = f.data_inicio + relativedelta(months=meses_desde_inicio)
-                if inicio <= proxima <= fim:
-                    fin_prev += f.parcela_mensal
+        if ids_veiculos:
+            financiamentos = db.query(Financiamento).filter(
+                Financiamento.veiculo_id.in_(ids_veiculos),
+                Financiamento.parcelas_pagas < Financiamento.total_parcelas
+            ).all()
+            for f in financiamentos:
+                meses_desde_inicio = (inicio.year - f.data_inicio.year) * 12 + (inicio.month - f.data_inicio.month)
+                if 0 <= meses_desde_inicio < f.total_parcelas:
+                    proxima = f.data_inicio + relativedelta(months=meses_desde_inicio)
+                    if inicio <= proxima <= fim:
+                        fin_prev += f.parcela_mensal
 
-        saidas_prev = round(fin_prev + media_despesas, 2)
-        saldo = round(receita_prev - saidas_prev, 2)
+        saidas_prev = round(float(fin_prev) + float(despesas_prev) + float(gerais_prev), 2)
+        saldo = round(float(receita_prev) - saidas_prev, 2)
 
         projecao.append({
             "mes": mes_ref.strftime("%Y-%m"),
             "mes_nome": ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][mes_ref.month-1],
-            "receita_prevista": round(receita_prev, 2),
+            "receita_prevista": round(float(receita_prev), 2),
             "financiamentos_previstos": saidas_prev,
             "saldo_previsto": saldo
         })
