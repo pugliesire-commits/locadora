@@ -971,7 +971,7 @@ function abrirModal() {
     ['c-nome','c-cpf','c-cnh','c-email','c-telefone','c-endereco'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('modal-cliente').classList.add('open');
   }
-  else if (paginaAtual === 'locacoes') { carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
+  else if (paginaAtual === 'locacoes') { locacaoEditandoId=null; document.querySelector('#modal-locacao .modal-title').textContent='Nova Locação'; carregarSelectsLocacao(); document.getElementById('modal-locacao').classList.add('open'); }
   else if (paginaAtual === 'financiamentos') { carregarSelectsFinanciamento(); document.getElementById('modal-financiamento').classList.add('open'); }
   else if (paginaAtual === 'despesas') { carregarSelectsDespesa(); document.getElementById('modal-despesa').classList.add('open'); }
   else if (paginaAtual === 'usuarios') document.getElementById('modal-usuario').classList.add('open');
@@ -1044,7 +1044,7 @@ function renderVeiculos(lista){
   tbody.innerHTML=f.map(v=>`<tr><td><strong>${v.marca}</strong> ${v.modelo}</td><td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td><td>R$ ${v.valor_diaria}</td><td>${v.investidor_id?'<span class="badge badge-blue">👥 Investidor</span>':'<span class="badge badge-green">🚗 Próprio</span>'}</td><td>${badgeStatus(v.status)}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>`:''}</td></tr>`).join('');
 }
  function filtrarLocacoes(f,el){filtroLocacao=f;document.querySelectorAll('#page-locacoes .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderLocacoes();}
-function renderLocacoes(){const tbody=document.getElementById('tabela-locacoes');const lista=filtroLocacao==='todas'?locacoesCache:filtroLocacao==='Encerrada'?locacoesCache.filter(l=>l.status==='Encerrada'||l.status==='Concluída'):locacoesCache.filter(l=>l.status===filtroLocacao);if(!lista.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}const cliMapLoc={};clientesCache.forEach(c=>cliMapLoc[c.id]=c.nome);const veiMapLoc={};veiculosCache.forEach(v=>veiMapLoc[v.id]=v.placa+' '+v.marca+' '+v.modelo);tbody.innerHTML=lista.map(l=>`<tr><td>#${l.id}</td><td><strong>${cliMapLoc[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapLoc[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${badgePeriodo(l.periodo)}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_periodo?.toFixed(2)||'—'}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td><td><div style="display:inline-flex;gap:6px;flex-wrap:nowrap;margin:0"><button class="action-btn" title="Receber" onclick="verRecebimentos(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">💰</button><button class="action-btn" title="Contrato" onclick="window.open('/contrato/${l.id}','_blank')" style="width:32px;height:32px;padding:0;font-size:15px;border-color:#9b59b6">📄</button>${l.status==='Ativa'&&podeEditar()?`<button class="action-btn warning" title="Devolver" onclick="devolverVeiculo(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🔑</button>`:''}<button class="action-btn" title="Adicionar Extra" onclick="abrirExtra(${l.id})" style="width:32px;height:32px;padding:0;font-size:16px">➕</button>${podeExcluir()?`<button class="action-btn danger" title="Excluir" onclick="excluirLocacao(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🗑️</button>`:''}</div></td></tr>`).join('');}
+function renderLocacoes(){const tbody=document.getElementById('tabela-locacoes');const lista=filtroLocacao==='todas'?locacoesCache:filtroLocacao==='Encerrada'?locacoesCache.filter(l=>l.status==='Encerrada'||l.status==='Concluída'):locacoesCache.filter(l=>l.status===filtroLocacao);if(!lista.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}const cliMapLoc={};clientesCache.forEach(c=>cliMapLoc[c.id]=c.nome);const veiMapLoc={};veiculosCache.forEach(v=>veiMapLoc[v.id]=v.placa+' '+v.marca+' '+v.modelo);tbody.innerHTML=lista.map(l=>`<tr><td>#${l.id}</td><td><strong>${cliMapLoc[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapLoc[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${badgePeriodo(l.periodo)}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_periodo?.toFixed(2)||'—'}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td><td><div style="display:inline-flex;gap:6px;flex-wrap:nowrap;margin:0"><button class="action-btn" title="Receber" onclick="verRecebimentos(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">💰</button><button class="action-btn" title="Contrato" onclick="window.open('/contrato/${l.id}','_blank')" style="width:32px;height:32px;padding:0;font-size:15px;border-color:#9b59b6">📄</button>${l.status==='Ativa'&&podeEditar()?`<button class="action-btn" title="Editar" onclick="editarLocacao(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px;border-color:#9eff1f">✏️</button>`:''}${l.status==='Ativa'&&podeEditar()?`<button class="action-btn warning" title="Devolver" onclick="devolverVeiculo(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🔑</button>`:''}<button class="action-btn" title="Adicionar Extra" onclick="abrirExtra(${l.id})" style="width:32px;height:32px;padding:0;font-size:16px">➕</button>${podeExcluir()?`<button class="action-btn danger" title="Excluir" onclick="excluirLocacao(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🗑️</button>`:''}</div></td></tr>`).join('');}
 function filtrarVeiculos(f,el){filtroVeiculo=f;document.querySelectorAll('#page-veiculos .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderVeiculos(veiculosCache);}
 function buscarVeiculos(q){renderVeiculos(veiculosCache.filter(v=>(v.marca+v.modelo+v.placa).toLowerCase().includes(q.toLowerCase())));}
 async function carregarSelectsInvestidor(){try{const res=await fetch(API+'/investidores/',auth());const invs=await res.json();document.getElementById('v-investidor').innerHTML='<option value="">Selecione...</option>'+invs.map(i=>`<option value="${i.id}">${i.nome} (${i.percentual_comissao}%)</option>`).join('');}catch{}}
@@ -1140,9 +1140,29 @@ function calcularTotalLocacao(){
   document.getElementById('resumo-locacao').style.display='block';
 }
 
+let locacaoEditandoId=null;
+async function editarLocacao(id){
+  const loc=locacoesCache.find(l=>l.id===id);if(!loc)return;
+  locacaoEditandoId=id;
+  const[rv,rc]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/clientes/',auth())]);
+  const veiculos=await rv.json(),clientes=await rc.json();
+  document.querySelector('#modal-locacao .modal-title').textContent='Editar Locação #'+id;
+  document.getElementById('l-cliente').innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}" ${c.id===loc.cliente_id?'selected':''}>${c.nome}</option>`).join('');
+  document.getElementById('l-veiculo').innerHTML='<option value="">Selecione...</option>'+veiculos.filter(v=>v.status==='Disponível'||v.id===loc.veiculo_id).map(v=>`<option value="${v.id}" ${v.id===loc.veiculo_id?'selected':''}>${v.marca} ${v.modelo} — ${v.placa}</option>`).join('');
+  document.getElementById('l-inicio').value=(loc.data_inicio||'').slice(0,10);
+  document.getElementById('l-fim').value=(loc.data_fim||'').slice(0,10);
+  document.getElementById('l-periodo').value=loc.periodo||'diario';
+  document.getElementById('l-valor-periodo').value=loc.valor_periodo||'';
+  atualizarLabelPeriodo();
+  document.getElementById('modal-locacao').classList.add('open');
+}
 async function salvarLocacao(){
   const body={cliente_id:parseInt(document.getElementById('l-cliente').value),veiculo_id:parseInt(document.getElementById('l-veiculo').value),data_inicio:document.getElementById('l-inicio').value,data_fim:document.getElementById('l-fim').value,periodo:document.getElementById('l-periodo').value,valor_periodo:parseFloat(document.getElementById('l-valor-periodo').value)||0};
   if(!body.cliente_id||!body.veiculo_id||!body.data_inicio||!body.data_fim||!body.valor_periodo){showToast('Preencha todos os campos.','var(--warning)');return;}
+  if(locacaoEditandoId){
+    try{const res=await fetch(API+'/locacoes/'+locacaoEditandoId+'/editar',{method:'PUT',body:JSON.stringify(body),...auth()});if(!res.ok){const err=await res.json();showToast(err.detail||'Erro ao editar.','var(--danger)');return;}fecharModal('modal-locacao');showToast('✓ Locação atualizada!');locacaoEditandoId=null;await carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}
+    return;
+  }
   try{const res=await fetch(API+'/locacoes/',{method:'POST',body:JSON.stringify(body),...auth()});if(!res.ok)throw new Error();const data=await res.json();fecharModal('modal-locacao');showToast(`✓ Locação criada! ${data.periodo} — R$ ${data.valor_total?.toFixed(2)}`);await carregarLocacoes();carregarDashboard();}catch{showToast('Erro.','var(--danger)');}
 }
 let devolverLocacaoId=null;
