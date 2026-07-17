@@ -425,6 +425,116 @@ def extrato_frota(tipo: Optional[str] = None, investidor_id: Optional[int] = Non
         "comissao": comissao,
         "saldo_final": round(saldo, 2)
     }
+@router.get("/dre")
+def dre_cascata(veiculo_id: Optional[int] = None, tipo: Optional[str] = None, investidor_id: Optional[int] = None, mes: Optional[str] = None, meses: int = 3, db: Session = Depends(get_db), usuario=Depends(verificar_token)):
+    from modelos.investidor import Investidor
+    nomes_meses = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']
+    if mes:
+        ano_ref, mes_ref = int(mes.split("-")[0]), int(mes.split("-")[1])
+    else:
+        hoje = date.today()
+        ano_ref, mes_ref = hoje.year, hoje.month
+    if meses not in (3, 6, 12):
+        meses = 3
+    ref = date(ano_ref, mes_ref, 1)
+    inicio = ref - relativedelta(months=meses - 1)
+    if mes_ref == 12:
+        fim = date(ano_ref + 1, 1, 1) - relativedelta(days=1)
+    else:
+        fim = date(ano_ref, mes_ref + 1, 1) - relativedelta(days=1)
+    ym_inicio = inicio.year * 12 + inicio.month
+    ym_fim = ano_ref * 12 + mes_ref
+
+    proprios = db.query(Veiculo).filter(Veiculo.investidor_id == None).all()
+    num_proprios = len(proprios)
+    veiculo_unico = None
+    eh_proprio_unico = False
+    if veiculo_id:
+        veiculo_unico = db.query(Veiculo).filter(Veiculo.id == veiculo_id).first()
+        ids_veiculos = [veiculo_id] if veiculo_unico else []
+        titulo = f"{veiculo_unico.marca} {veiculo_unico.modelo} ({veiculo_unico.placa})" if veiculo_unico else "Veiculo"
+        eh_proprio_unico = veiculo_unico is not None and veiculo_unico.investidor_id is None
+    elif tipo == "propria":
+        ids_veiculos = [v.id for v in proprios]
+        titulo = "Frota Propria"
+    elif investidor_id:
+        inv = db.query(Investidor).filter(Investidor.id == investidor_id).first()
+        ids_veiculos = [v.id for v in db.query(Veiculo).filter(Veiculo.investidor_id == investidor_id).all()]
+        titulo = inv.nome if inv else "Investidor"
+    else:
+        ids_veiculos = [v.id for v in db.query(Veiculo).all()]
+        titulo = "Todos os veiculos"
+
+    locacao_ids = [l.id for l in db.query(Locacao).filter(Locacao.veiculo_id.in_(ids_veiculos)).all()] if ids_veiculos else []
+
+    receita = 0.0
+    if locacao_ids:
+        receita = db.query(func.sum(Parcela.valor_pago)).filter(
+            Parcela.locacao_id.in_(locacao_ids),
+            Parcela.status.in_(["pago", "parcial"]),
+            Parcela.data_pagamento >= inicio,
+            Parcela.data_pagamento <= fim
+        ).scalar() or 0
+
+    despesas_veiculo = []
+    despesas_veiculo_total = 0.0
+    if ids_veiculos:
+        linhas = db.query(Despesa.categoria, func.sum(Despesa.valor)).filter(
+            Despesa.veiculo_id.in_(ids_veiculos),
+            Despesa.data >= inicio,
+            Despesa.data <= fim
+        ).group_by(Despesa.categoria).all()
+        for cat, val in linhas:
+            despesas_veiculo.append({"categoria": cat or "outros", "valor": round(float(val or 0), 2)})
+            despesas_veiculo_total += float(val or 0)
+
+    total_geral = db.query(func.sum(Despesa.valor)).filter(
+        Despesa.veiculo_id == None,
+        Despesa.data >= inicio,
+        Despesa.data <= fim
+    ).scalar() or 0
+    total_geral = float(total_geral)
+    rateio_por_carro = (total_geral / num_proprios) if num_proprios > 0 else 0
+    if tipo == "propria":
+        despesas_gerais = total_geral
+    elif veiculo_id and eh_proprio_unico:
+        despesas_gerais = rateio_por_carro
+    elif (not veiculo_id) and (not tipo) and (not investidor_id):
+        despesas_gerais = total_geral
+    else:
+        despesas_gerais = 0.0
+    despesas_gerais = round(despesas_gerais, 2)
+
+    financiamento = 0.0
+    if ids_veiculos:
+        fins = db.query(Financiamento).filter(Financiamento.veiculo_id.in_(ids_veiculos)).all()
+        for f in fins:
+            for i in range(f.parcelas_pagas):
+                dp = f.data_inicio + relativedelta(months=i)
+                if ym_inicio <= (dp.year * 12 + dp.month) <= ym_fim:
+                    financiamento += f.parcela_mensal
+
+    receita = round(float(receita), 2)
+    despesas_veiculo_total = round(despesas_veiculo_total, 2)
+    financiamento = round(float(financiamento), 2)
+    resultado_liquido = round(receita - despesas_veiculo_total - despesas_gerais - financiamento, 2)
+
+    if inicio.year == ano_ref:
+        periodo_label = f"{nomes_meses[inicio.month-1]} a {nomes_meses[mes_ref-1]} {ano_ref}"
+    else:
+        periodo_label = f"{nomes_meses[inicio.month-1]}/{inicio.year} a {nomes_meses[mes_ref-1]}/{ano_ref}"
+
+    return {
+        "titulo": titulo,
+        "periodo_label": f"{periodo_label} · {meses} meses somados",
+        "receita": receita,
+        "despesas_veiculo": despesas_veiculo,
+        "despesas_veiculo_total": despesas_veiculo_total,
+        "despesas_gerais": despesas_gerais,
+        "financiamento": financiamento,
+        "resultado_liquido": resultado_liquido
+    }
+
 @router.get("/dashboard-frota")
 def dashboard_frota(db: Session = Depends(get_db), usuario=Depends(verificar_token)):
     from modelos.investidor import Investidor
