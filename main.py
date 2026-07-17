@@ -5,7 +5,7 @@ from modelos.database import engine, Base
 from rotas import veiculos, clientes, locacoes, auth, pagamentos, financiamento, despesas, indicadores, investidores, parcelas, relatorio, aportes, contratos
 from modelos import veiculo, cliente, locacao, usuario, pagamento
 from modelos import financiamento as financiamento_model
-from modelos import despesa, investidor, lancamento, parcela, aporte
+from modelos import despesa, investidor, lancamento, parcela, aporte, exclusao_parcela
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,6 +30,7 @@ try:
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_nome VARCHAR;",
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS locador_assinado_em TIMESTAMP;",
         "ALTER TABLE locacoes ADD COLUMN IF NOT EXISTS contrato_pdf_html TEXT;",
+        "CREATE TABLE IF NOT EXISTS exclusoes_parcelas (id SERIAL PRIMARY KEY, parcela_id INTEGER, locacao_id INTEGER, numero INTEGER, data_vencimento DATE, valor FLOAT, motivo TEXT NOT NULL, excluido_em TIMESTAMP DEFAULT NOW());",
     ]
     for _cmd in _cmds:
         try: _cur.execute(_cmd)
