@@ -434,7 +434,7 @@ def dre_cascata(veiculo_id: Optional[int] = None, tipo: Optional[str] = None, in
     else:
         hoje = date.today()
         ano_ref, mes_ref = hoje.year, hoje.month
-    if meses not in (3, 6, 12):
+    if meses not in (1, 3, 6, 12):
         meses = 3
     ref = date(ano_ref, mes_ref, 1)
     inicio = ref - relativedelta(months=meses - 1)
