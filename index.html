@@ -1283,13 +1283,26 @@ async function verParcelasLocacao(locacaoId, el){
               ${badgeParcela(p.status, vencida)}
             </div>
             <div class="parcela-actions">
-              ${p.status!=='pago'&&podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirReceberParcela(${p.id},${p.valor},${p.valor_pago||0},'${formatData(p.data_vencimento)}')">💰 Receber</button>`:''}
+             ${p.status!=='pago'&&podeLancarFinanceiro()?`<button class="action-btn" onclick="abrirReceberParcela(${p.id},${p.valor},${p.valor_pago||0},'${formatData(p.data_vencimento)}')">💰 Receber</button>`:''}${(!p.valor_pago||p.valor_pago===0)&&podeExcluir()?`<button class="action-btn danger" onclick="excluirParcela(${p.id},${p.numero},${p.valor})">🗑️ Excluir</button>`:''}
               ${p.status==='pago'?('<span style="color:var(--green);font-size:11px">✓ '+formatData(p.data_pagamento)+'</span> '+(podeLancarFinanceiro()?'<button class="action-btn" onclick="editarParcela('+p.id+','+p.valor+','+(p.valor_pago||0)+',' + "'"+formatData(p.data_vencimento)+"'" + ','+JSON.stringify(p.observacao||'').replace(/"/g,'&quot;') + ')">✏️ Editar</button>':'')):''}
             </div>
           </div>`;
         }).join('')}
       </div>`;
   }catch(e){area.innerHTML='<div class="empty-state">Erro ao carregar parcelas.</div>';console.error(e);}
+}
+
+async function excluirParcela(parcelaId, numero, valor){
+  const motivo=prompt('Por que esta excluindo a parcela #'+numero+' (R$ '+valor.toFixed(2)+')?\n\nDigite o motivo:');
+  if(motivo===null)return;
+  if(!motivo.trim()){showToast('Voce precisa informar o motivo.','var(--warning)');return;}
+  try{
+    const res=await fetch(API+'/parcelas/'+parcelaId+'/excluir',{method:'DELETE',body:JSON.stringify({motivo:motivo.trim()}),...auth()});
+    if(!res.ok){const err=await res.json();showToast(err.detail||'Erro ao excluir.','var(--danger)');return;}
+    showToast('✓ Parcela excluida!');
+    if(locacaoSelecionada)verParcelasLocacao(locacaoSelecionada,null);
+    carregarDashboard();
+  }catch{showToast('Erro ao excluir.','var(--danger)');}
 }
 
 function voltarRecebimentos(){
