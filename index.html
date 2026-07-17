@@ -427,6 +427,10 @@
     <div id="area-dre-cascata"><div class="empty-state">Selecione o que ver e clique.</div></div>
   </div>
   <div id="area-projecao" style="display:none">
+    <div class="table-card" style="padding:16px;margin-bottom:16px">
+      <label style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">O que ver</label>
+      <select id="proj-escopo" class="select-input" onchange="carregarProjecao()"><option value="">Carregando...</option></select>
+    </div>
     <div class="table-card">
       <table>
         <thead>
@@ -1758,8 +1762,23 @@ async function carregarDRENova(){
 }
 
 async function carregarProjecao(){
+  const sel=document.getElementById('proj-escopo');
+  if(sel.dataset.pronto!=='1'){
+    try{
+      const ri=await fetch(API+'/investidores/',auth());
+      const investidores=await ri.json();
+      let html='<option value="tipo:propria">Frota Propria (todos os proprios)</option>';
+      if(investidores.length){html+='<optgroup label="Investidores">'+investidores.map(i=>`<option value="inv:${i.id}">${i.nome}</option>`).join('')+'</optgroup>';}
+      sel.innerHTML=html;
+      sel.dataset.pronto='1';
+    }catch{sel.innerHTML='<option value="tipo:propria">Frota Propria</option>';}
+  }
+  const escopo=sel.value||'tipo:propria';
+  let params='';
+  if(escopo.startsWith('tipo:'))params='?tipo='+escopo.split(':')[1];
+  else if(escopo.startsWith('inv:'))params='?investidor_id='+escopo.split(':')[1];
   try{
-    const res=await fetch(API+'/relatorio/projecao',auth());
+    const res=await fetch(API+'/relatorio/projecao'+params,auth());
     const data=await res.json();
     document.getElementById('tabela-projecao').innerHTML=data.map(m=>{
       const cor=m.saldo_previsto>=0?'var(--green)':'var(--danger)';
