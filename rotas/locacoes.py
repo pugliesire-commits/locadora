@@ -151,6 +151,61 @@ def buscar_locacao(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Locação não encontrada")
     return locacao
 
+@router.put("/{id}/editar")
+def editar_locacao(id: int, dados: LocacaoSchema, db: Session = Depends(get_db)):
+    locacao = db.query(Locacao).filter(Locacao.id == id).first()
+    if not locacao:
+        raise HTTPException(status_code=404, detail="Locação não encontrada")
+    tem_pago = db.query(Parcela).filter(Parcela.locacao_id == id, Parcela.valor_pago > 0).first()
+    if tem_pago:
+        raise HTTPException(status_code=400, detail="Esta locacao ja tem recebimento lancado. Estorne os recebimentos antes de editar o fluxo.")
+    inicio = datetime.strptime(dados.data_inicio, "%Y-%m-%d")
+    fim = datetime.strptime(dados.data_fim, "%Y-%m-%d")
+    dias = (fim - inicio).days
+    if dias <= 0:
+        raise HTTPException(status_code=400, detail="A data de fim deve ser depois da data de inicio")
+    veiculo_novo = db.query(Veiculo).filter(Veiculo.id == dados.veiculo_id).first()
+    if not veiculo_novo:
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+    if dados.veiculo_id != locacao.veiculo_id:
+        if veiculo_novo.status != "Disponível":
+            raise HTTPException(status_code=400, detail="O novo veiculo nao esta disponivel")
+        veiculo_antigo = db.query(Veiculo).filter(Veiculo.id == locacao.veiculo_id).first()
+        if veiculo_antigo:
+            veiculo_antigo.status = "Disponível"
+        veiculo_novo.status = "Alugado"
+    if dados.periodo == "diario":
+        valor_total = dias * dados.valor_periodo
+    elif dados.periodo == "semanal":
+        semanas = dias // 7 + (1 if dias % 7 > 0 else 0)
+        valor_total = semanas * dados.valor_periodo
+    elif dados.periodo == "mensal":
+        meses = dias // 30 + (1 if dias % 30 > 0 else 0)
+        valor_total = meses * dados.valor_periodo
+    else:
+        valor_total = dias * dados.valor_periodo
+    locacao.cliente_id = dados.cliente_id
+    locacao.veiculo_id = dados.veiculo_id
+    locacao.data_inicio = dados.data_inicio
+    locacao.data_fim = dados.data_fim
+    locacao.dias = dias
+    locacao.periodo = dados.periodo
+    locacao.valor_periodo = dados.valor_periodo
+    locacao.valor_total = valor_total
+    locacao.valor_diaria = veiculo_novo.valor_diaria
+    db.query(Parcela).filter(Parcela.locacao_id == id).delete()
+    gerar_parcelas(
+        locacao_id=id,
+        data_inicio=dados.data_inicio,
+        data_fim=dados.data_fim,
+        periodo=dados.periodo,
+        valor_periodo=dados.valor_periodo,
+        db=db
+    )
+    db.commit()
+    db.refresh(locacao)
+    return {"mensagem": "Locação atualizada com sucesso", "valor_total": valor_total}
+
 @router.put("/{id}/devolver")
 def devolver_veiculo(id: int, dados: Optional[dict] = None, db: Session = Depends(get_db)):
     locacao = db.query(Locacao).filter(Locacao.id == id).first()
