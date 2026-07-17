@@ -415,8 +415,9 @@
         </div>
         <div>
           <label style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Periodo (somado)</label>
-          <div class="tabs-bar" style="margin:0" id="dre-periodo">
-            <button class="tab-btn active" onclick="setDrePeriodo(3,this)">3 meses</button>
+         <div class="tabs-bar" style="margin:0" id="dre-periodo">
+            <button class="tab-btn active" onclick="setDrePeriodo(1,this)">1 mes</button>
+            <button class="tab-btn" onclick="setDrePeriodo(3,this)">3 meses</button>
             <button class="tab-btn" onclick="setDrePeriodo(6,this)">6 meses</button>
             <button class="tab-btn" onclick="setDrePeriodo(12,this)">12 meses</button>
           </div>
@@ -1700,7 +1701,7 @@ async function carregarContasMes(){
   }catch(e){console.error(e);}
 }
 
-let drePeriodo=3;
+let drePeriodo=1;
 function setDrePeriodo(n,el){drePeriodo=n;document.querySelectorAll('#dre-periodo .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');carregarDRENova();}
 async function carregarDRE(){
   const sel=document.getElementById('dre-escopo');
