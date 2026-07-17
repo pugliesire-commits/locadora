@@ -381,7 +381,7 @@
        <!-- RELATÓRIO -->
 <div id="page-relatorio" style="display:none">
   <div class="tabs-bar">
-    <button class="tab-btn active" onclick="mostrarAbaRelatorio('contas',this)">📅 Contas do Mês</button>
+    <button class="tab-btn" style="display:none" onclick="mostrarAbaRelatorio('contas',this)">📅 Contas do Mês</button>
     <button class="tab-btn" onclick="mostrarAbaRelatorio('dre',this)">📊 DRE Anual</button>
     <button class="tab-btn" onclick="mostrarAbaRelatorio('projecao',this)">🔮 Projeção 6 Meses</button>
   </div>
@@ -947,7 +947,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'relatorio') {
   document.getElementById('filtro-mes-relatorio').value=new Date().toISOString().slice(0,7);
   document.getElementById('filtro-ano-dre').value=new Date().getFullYear();
-  mostrarAbaRelatorio('contas',document.querySelector('#page-relatorio .tab-btn'));
+  mostrarAbaRelatorio('dre',document.querySelectorAll('#page-relatorio .tab-btn')[1]);
 }
   else carregarDashboard();
 }
