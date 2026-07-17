@@ -1702,7 +1702,7 @@ async function carregarContasMes(){
 }
 
 let drePeriodo=1;
-function setDrePeriodo(n,el){drePeriodo=n;document.querySelectorAll('#dre-periodo .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');carregarDRENova();}
+function setDrePeriodo(n,el){drePeriodo=parseInt(n);document.querySelectorAll('#dre-periodo .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');carregarDRENova();}
 async function carregarDRE(){
   const sel=document.getElementById('dre-escopo');
   if(sel.dataset.pronto!=='1'){
