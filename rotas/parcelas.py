@@ -6,6 +6,10 @@ from datetime import date
 from modelos.database import get_db
 from modelos.parcela import Parcela
 from modelos.locacao import Locacao
+from modelos.exclusao_parcela import ExclusaoParcela
+
+class ExclusaoSchema(BaseModel):
+    motivo: str
 
 router = APIRouter(prefix="/parcelas", tags=["Parcelas"])
 
@@ -80,6 +84,28 @@ def editar_parcela(parcela_id: int, dados: PagamentoParcela, db: Session = Depen
     db.commit()
     db.refresh(parcela)
     return parcela
+
+@router.delete("/{parcela_id}/excluir")
+def excluir_parcela(parcela_id: int, dados: ExclusaoSchema, db: Session = Depends(get_db)):
+    parcela = db.query(Parcela).filter(Parcela.id == parcela_id).first()
+    if not parcela:
+        raise HTTPException(status_code=404, detail="Parcela não encontrada")
+    if (parcela.valor_pago or 0) > 0:
+        raise HTTPException(status_code=400, detail="Esta parcela ja tem valor recebido e nao pode ser excluida.")
+    if not dados.motivo or not dados.motivo.strip():
+        raise HTTPException(status_code=400, detail="Informe o motivo da exclusao.")
+    registro = ExclusaoParcela(
+        parcela_id=parcela.id,
+        locacao_id=parcela.locacao_id,
+        numero=parcela.numero,
+        data_vencimento=parcela.data_vencimento,
+        valor=parcela.valor,
+        motivo=dados.motivo.strip()
+    )
+    db.add(registro)
+    db.delete(parcela)
+    db.commit()
+    return {"mensagem": "Parcela excluida e registrada no historico"}
 
 @router.delete("/locacao/{locacao_id}")
 def excluir_parcelas_locacao(locacao_id: int, db: Session = Depends(get_db)):
