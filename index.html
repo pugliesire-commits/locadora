@@ -403,25 +403,27 @@
     </div>
   </div>
   <div id="area-dre" style="display:none">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <label style="color:var(--gray);font-size:13px">Ano:</label>
-      <input type="number" id="filtro-ano-dre" class="select-input" style="width:120px" value="2026" onchange="carregarDRE()"/>
+    <div class="table-card" style="padding:16px;margin-bottom:16px">
+      <div style="margin-bottom:12px">
+        <label style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">O que ver</label>
+        <select id="dre-escopo" class="select-input" onchange="carregarDRENova()"><option value="">Carregando...</option></select>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Mes de referencia</label>
+          <input type="month" id="dre-mes" class="select-input" style="width:180px" onchange="carregarDRENova()"/>
+        </div>
+        <div>
+          <label style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:5px">Periodo (somado)</label>
+          <div class="tabs-bar" style="margin:0" id="dre-periodo">
+            <button class="tab-btn active" onclick="setDrePeriodo(3,this)">3 meses</button>
+            <button class="tab-btn" onclick="setDrePeriodo(6,this)">6 meses</button>
+            <button class="tab-btn" onclick="setDrePeriodo(12,this)">12 meses</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="table-card">
-      <table>
-        <thead>
-          <tr>
-            <th>Mês</th>
-            <th style="color:var(--green)">Receita</th>
-            <th style="color:var(--danger)">Despesas</th>
-            <th style="color:var(--warning)">Financiamentos</th>
-            <th>Lucro Líquido</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-dre"></tbody>
-        <tfoot id="tfoot-dre"></tfoot>
-      </table>
-    </div>
+    <div id="area-dre-cascata"><div class="empty-state">Selecione o que ver e clique.</div></div>
   </div>
   <div id="area-projecao" style="display:none">
     <div class="table-card">
@@ -1698,21 +1700,60 @@ async function carregarContasMes(){
   }catch(e){console.error(e);}
 }
 
+let drePeriodo=3;
+function setDrePeriodo(n,el){drePeriodo=n;document.querySelectorAll('#dre-periodo .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');carregarDRENova();}
 async function carregarDRE(){
-  const ano=document.getElementById('filtro-ano-dre').value||new Date().getFullYear();
+  const sel=document.getElementById('dre-escopo');
+  if(sel.dataset.pronto!=='1'){
+    try{
+      const[rv,ri]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/investidores/',auth())]);
+      const veiculos=await rv.json(),investidores=await ri.json();
+      let html='<option value="tipo:propria">Frota Propria (todos os proprios)</option>';
+      if(investidores.length){html+='<optgroup label="Investidores">'+investidores.map(i=>`<option value="inv:${i.id}">${i.nome}</option>`).join('')+'</optgroup>';}
+      html+='<optgroup label="Veiculos">'+veiculos.map(v=>`<option value="vei:${v.id}">${v.marca} ${v.modelo} — ${v.placa}</option>`).join('')+'</optgroup>';
+      sel.innerHTML=html;
+      sel.dataset.pronto='1';
+    }catch{sel.innerHTML='<option value="">Erro ao carregar</option>';}
+  }
+  if(!document.getElementById('dre-mes').value){document.getElementById('dre-mes').value=new Date().toISOString().slice(0,7);}
+  carregarDRENova();
+}
+async function carregarDRENova(){
+  const escopo=document.getElementById('dre-escopo').value;
+  const mes=document.getElementById('dre-mes').value;
+  const area=document.getElementById('area-dre-cascata');
+  if(!escopo||!mes){area.innerHTML='<div class="empty-state">Selecione o que ver e o mes.</div>';return;}
+  let params='mes='+mes+'&meses='+drePeriodo;
+  if(escopo.startsWith('tipo:'))params+='&tipo='+escopo.split(':')[1];
+  else if(escopo.startsWith('inv:'))params+='&investidor_id='+escopo.split(':')[1];
+  else if(escopo.startsWith('vei:'))params+='&veiculo_id='+escopo.split(':')[1];
+  area.innerHTML='<div class="empty-state">Carregando...</div>';
   try{
-    const res=await fetch(API+'/relatorio/dre?ano='+ano,auth());
-    const data=await res.json();
-    const tbody=document.getElementById('tabela-dre');
-    let totR=0,totD=0,totF=0,totL=0;
-    tbody.innerHTML=data.meses.map(m=>{
-      totR+=m.receita;totD+=m.despesas;totF+=m.parcelas_financiamento;totL+=m.lucro_liquido;
-      const cor=m.lucro_liquido>=0?'var(--green)':'var(--danger)';
-      return '<tr><td><strong>'+m.mes_nome+'</strong></td><td style="color:var(--green)">R$ '+m.receita.toFixed(2)+'</td><td style="color:var(--danger)">R$ '+m.despesas.toFixed(2)+'</td><td style="color:var(--warning)">R$ '+m.parcelas_financiamento.toFixed(2)+'</td><td style="color:'+cor+';font-weight:700">R$ '+m.lucro_liquido.toFixed(2)+'</td></tr>';
-    }).join('');
-    const corT=totL>=0?'var(--green)':'var(--danger)';
-    document.getElementById('tfoot-dre').innerHTML='<tr style="border-top:2px solid var(--border)"><td><strong>TOTAL</strong></td><td style="color:var(--green);font-weight:700">R$ '+totR.toFixed(2)+'</td><td style="color:var(--danger);font-weight:700">R$ '+totD.toFixed(2)+'</td><td style="color:var(--warning);font-weight:700">R$ '+totF.toFixed(2)+'</td><td style="color:'+corT+';font-weight:700">R$ '+totL.toFixed(2)+'</td></tr>';
-  }catch(e){console.error(e);}
+    const res=await fetch(API+'/indicadores/dre?'+params,auth());
+    const d=await res.json();
+    const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const catNome={manutencao:'Manutencao',combustivel:'Combustivel',lavagem:'Lavagem',salarios:'Salarios',contas:'Contas',aluguel:'Aluguel',seguro:'Seguro',ipva_licenciamento:'IPVA / Licenciamento',pecas:'Pecas',outros:'Outros'};
+    let despLinhas=d.despesas_veiculo.map(x=>`<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--light);font-size:12px;padding-left:12px">${catNome[x.categoria]||x.categoria}</span><span style="color:var(--light);font-size:12px">${fmt(x.valor)}</span></div>`).join('');
+    if(!despLinhas)despLinhas='<div style="color:var(--gray);font-size:12px;padding:4px 12px">Nenhuma despesa no periodo</div>';
+    const geralLinha=d.despesas_gerais>0?`<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--light);font-size:12px;padding-left:12px">Despesas gerais (rateio)</span><span style="color:var(--light);font-size:12px">${fmt(d.despesas_gerais)}</span></div>`:'';
+    const corRes=d.resultado_liquido>=0?'var(--green)':'var(--danger)';
+    area.innerHTML=`
+      <div class="table-card" style="max-width:520px;padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;font-weight:600">DRE — ${d.titulo}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px">${d.periodo_label}</div>
+        </div>
+        <div style="padding:6px 18px 16px">
+          <div style="display:flex;justify-content:space-between;padding:10px 18px;background:#153a2a;margin:6px -18px 0"><span style="color:var(--green);font-size:13px;font-weight:600">(+) Receita de Locacao</span><span style="color:var(--green);font-size:13px;font-weight:600">${fmt(d.receita)}</span></div>
+          <div style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 2px">(–) Despesas do veiculo</div>
+          ${despLinhas}
+          ${geralLinha}
+          <div style="color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 2px">(–) Financiamento</div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--light);font-size:12px;padding-left:12px">Parcelas do periodo</span><span style="color:var(--light);font-size:12px">${fmt(d.financiamento)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:11px 18px;background:#153a2a;margin:12px -18px 0;border-top:1px solid #2a5"><span style="color:${corRes};font-size:15px;font-weight:700">= Resultado Liquido</span><span style="color:${corRes};font-size:15px;font-weight:700">${fmt(d.resultado_liquido)}</span></div>
+        </div>
+      </div>`;
+  }catch(e){area.innerHTML='<div class="empty-state">Erro ao carregar DRE.</div>';console.error(e);}
 }
 
 async function carregarProjecao(){
