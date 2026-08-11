@@ -870,7 +870,7 @@ let extratoInvestidorAtual = null;
 let modoExtratoAtual = 'consolidado';
 
 const PERFIL_LABELS = { admin: 'Administrador', atendente: 'Atendente', financeiro: 'Financeiro' };
-function podeEditar() { return PERFIL === 'admin'; }
+function podeEditar() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
 function podeExcluir() { return PERFIL === 'admin'; }
 function podeLancarFinanceiro() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
 function podeGerenciarInvestidores() { return PERFIL === 'admin' || PERFIL === 'financeiro'; }
