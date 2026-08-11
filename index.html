@@ -220,7 +220,7 @@
           </div>
           <div class="table-card">
             <div class="table-search"><input class="search-input" placeholder="Buscar veículo..." oninput="buscarVeiculos(this.value)"/></div>
-            <table><thead><tr><th>Marca / Modelo</th><th>Placa</th><th>Categoria</th><th>Ano</th><th>Diária</th><th>Tipo</th><th>Status</th><th></th></tr></thead>
+            <table><thead><tr><th>Marca / Modelo</th><th>Placa</th><th>Categoria</th><th>Ano</th><th>Diária</th><th>Tipo</th><th>Motorista</th><th>Status</th><th></th></tr></thead>
             <tbody id="tabela-veiculos"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody></table>
           </div>
         </div>
@@ -1044,12 +1044,22 @@ async function carregarDashboard() {
 }
 
 /* ===== VEÍCULOS ===== */
-async function carregarVeiculos(){try{const res=await fetch(API+'/veiculos/',auth());veiculosCache=await res.json();renderVeiculos(veiculosCache);}catch{}}
+async function carregarVeiculos(){try{const[rv,rl,rc]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/locacoes/',auth()),fetch(API+'/clientes/',auth())]);veiculosCache=await rv.json();locacoesCache=await rl.json();clientesCache=await rc.json();renderVeiculos(veiculosCache);}catch{}}
+function motoristaDoVeiculo(veiculoId){
+  const loc=locacoesCache.find(l=>l.veiculo_id===veiculoId&&l.status==='Ativa');
+  if(!loc)return null;
+  const cli=clientesCache.find(c=>c.id===loc.cliente_id);
+  return cli?cli.nome:null;
+}
 function renderVeiculos(lista){
   const tbody=document.getElementById('tabela-veiculos');
   const f=filtroVeiculo==='todos'?lista:lista.filter(v=>v.status===filtroVeiculo);
-  if(!f.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum veículo.</td></tr>';return;}
-  tbody.innerHTML=f.map(v=>`<tr><td><strong>${v.marca}</strong> ${v.modelo}</td><td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td><td>R$ ${v.valor_diaria}</td><td>${v.investidor_id?'<span class="badge badge-blue">👥 Investidor</span>':'<span class="badge badge-green">🚗 Próprio</span>'}</td><td>${badgeStatus(v.status)}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>`:''}</td></tr>`).join('');
+  if(!f.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhum veículo.</td></tr>';return;}
+  tbody.innerHTML=f.map(v=>{
+    const mot=motoristaDoVeiculo(v.id);
+    const motCel=mot?`<span style="color:var(--info)">${mot}</span>`:'<span style="color:var(--gray)">—</span>';
+    return `<tr><td><strong>${v.marca}</strong> ${v.modelo}</td><td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td><td>R$ ${v.valor_diaria}</td><td>${v.investidor_id?'<span class="badge badge-blue">👥 Investidor</span>':'<span class="badge badge-green">🚗 Próprio</span>'}</td><td>${motCel}</td><td>${badgeStatus(v.status)}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>`:''}</td></tr>`;
+  }).join('');
 }
  function filtrarLocacoes(f,el){filtroLocacao=f;document.querySelectorAll('#page-locacoes .tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderLocacoes();}
 function renderLocacoes(){const tbody=document.getElementById('tabela-locacoes');const lista=filtroLocacao==='todas'?locacoesCache:filtroLocacao==='Encerrada'?locacoesCache.filter(l=>l.status==='Encerrada'||l.status==='Concluída'):locacoesCache.filter(l=>l.status===filtroLocacao);if(!lista.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">Nenhuma locação encontrada.</td></tr>';return;}const cliMapLoc={};clientesCache.forEach(c=>cliMapLoc[c.id]=c.nome);const veiMapLoc={};veiculosCache.forEach(v=>veiMapLoc[v.id]=v.placa+' '+v.marca+' '+v.modelo);tbody.innerHTML=lista.map(l=>`<tr><td>#${l.id}</td><td><strong>${cliMapLoc[l.cliente_id]||'Cliente '+l.cliente_id}</strong></td><td>${veiMapLoc[l.veiculo_id]||'Veículo '+l.veiculo_id}</td><td>${badgePeriodo(l.periodo)}</td><td>${formatData(l.data_inicio)}</td><td>${formatData(l.data_fim)}</td><td>R$ ${l.valor_periodo?.toFixed(2)||'—'}</td><td>R$ ${l.valor_total?.toFixed(2)||'—'}</td><td>${badgeStatus(l.status)}</td><td><div style="display:inline-flex;gap:6px;flex-wrap:nowrap;margin:0"><button class="action-btn" title="Receber" onclick="verRecebimentos(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">💰</button><button class="action-btn" title="Contrato" onclick="window.open('/contrato/${l.id}','_blank')" style="width:32px;height:32px;padding:0;font-size:15px;border-color:#9b59b6">📄</button>${l.status==='Ativa'&&podeEditar()?`<button class="action-btn" title="Editar" onclick="editarLocacao(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px;border-color:#9eff1f">✏️</button>`:''}${l.status==='Ativa'&&podeEditar()?`<button class="action-btn warning" title="Devolver" onclick="devolverVeiculo(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🔑</button>`:''}<button class="action-btn" title="Adicionar Extra" onclick="abrirExtra(${l.id})" style="width:32px;height:32px;padding:0;font-size:16px">➕</button>${podeExcluir()?`<button class="action-btn danger" title="Excluir" onclick="excluirLocacao(${l.id})" style="width:32px;height:32px;padding:0;font-size:15px">🗑️</button>`:''}</div></td></tr>`).join('');}
