@@ -35,11 +35,14 @@ def resumo_parcelas(locacao_id: int, db: Session = Depends(get_db)):
     pagas = len([p for p in parcelas if p.status == 'pago'])
     pendentes = len([p for p in parcelas if p.status == 'pendente'])
     parciais = len([p for p in parcelas if p.status == 'parcial'])
+    hoje = date.today()
+    atraso = sum((p.valor - (p.valor_pago or 0)) for p in parcelas if p.status != 'pago' and p.data_vencimento and p.data_vencimento < hoje)
     return {
         "total_parcelas": len(parcelas),
         "valor_total": total,
         "valor_pago": pago,
         "valor_pendente": pendente,
+        "valor_atraso": round(atraso, 2),
         "pagas": pagas,
         "pendentes": pendentes,
         "parciais": parciais
