@@ -263,6 +263,7 @@
           <th>Período</th>
           <th style="color:var(--green)">Recebido</th>
           <th style="color:var(--warning)">Pendente</th>
+          <th style="color:var(--danger)">Em Atraso</th>
           <th>Progresso</th>
           <th>Status</th>
           <th></th>
@@ -1207,6 +1208,7 @@ async function carregarTabsRecebimentos(){
       const r=resumos[i];
       const pago=r.valor_pago||0;
       const pendente=r.valor_pendente||0;
+      const atraso=r.valor_atraso||0;
       const total=pago+pendente;
       const pct=total>0?Math.round(pago/total*100):0;
       const corPct=pct===100?'var(--green)':pct>50?'var(--info)':'var(--warning)';
@@ -1218,6 +1220,7 @@ async function carregarTabsRecebimentos(){
         <td>${periodoLabel}</td>
         <td style="color:var(--green);font-weight:700">R$ ${pago.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
         <td style="color:var(--warning);font-weight:700">R$ ${pendente.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td>${atraso>0?'<span style="color:var(--danger);font-weight:700">R$ '+atraso.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</span>':'<span style="color:var(--gray)">—</span>'}</td>
         <td style="min-width:100px">
           <div style="background:var(--border);border-radius:4px;height:6px;width:100%">
             <div style="background:${corPct};height:6px;border-radius:4px;width:${pct}%"></div>
