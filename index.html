@@ -933,7 +933,7 @@ function mostrarPagina(nome, el) {
   else if (nome === 'clientes') carregarClientes();
   else if (nome === 'locacoes') carregarLocacoes();
   else if (nome === 'recebimentos') {
-    document.getElementById('filtro-mes-recebimentos').value=new Date().toISOString().slice(0,7);
+    document.getElementById('filtro-mes-recebimentos').value='';
     carregarTabsRecebimentos();
   }
   else if (nome === 'financiamentos') carregarFinanciamentos();
