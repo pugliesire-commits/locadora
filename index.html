@@ -1045,7 +1045,8 @@ async function carregarDashboard() {
 
 /* ===== VEÍCULOS ===== */
 async function carregarVeiculos(){try{const[rv,rl,rc]=await Promise.all([fetch(API+'/veiculos/',auth()),fetch(API+'/locacoes/',auth()),fetch(API+'/clientes/',auth())]);veiculosCache=await rv.json();locacoesCache=await rl.json();clientesCache=await rc.json();renderVeiculos(veiculosCache);}catch{}}
-function motoristaDoVeiculo(veiculoId){
+function motoristaDoVeiculo(veiculoId,statusVeiculo){
+  if(statusVeiculo!=='Alugado')return null;
   const loc=locacoesCache.find(l=>l.veiculo_id===veiculoId&&l.status==='Ativa');
   if(!loc)return null;
   const cli=clientesCache.find(c=>c.id===loc.cliente_id);
@@ -1056,7 +1057,7 @@ function renderVeiculos(lista){
   const f=filtroVeiculo==='todos'?lista:lista.filter(v=>v.status===filtroVeiculo);
   if(!f.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">Nenhum veículo.</td></tr>';return;}
   tbody.innerHTML=f.map(v=>{
-    const mot=motoristaDoVeiculo(v.id);
+    const mot=motoristaDoVeiculo(v.id,v.status);
     const motCel=mot?`<span style="color:var(--info)">${mot}</span>`:'<span style="color:var(--gray)">—</span>';
     return `<tr><td><strong>${v.marca}</strong> ${v.modelo}</td><td>${v.placa}</td><td>${v.categoria||'—'}</td><td>${v.ano||'—'}</td><td>R$ ${v.valor_diaria}</td><td>${v.investidor_id?'<span class="badge badge-blue">👥 Investidor</span>':'<span class="badge badge-green">🚗 Próprio</span>'}</td><td>${motCel}</td><td>${badgeStatus(v.status)}</td><td>${podeEditar()?`<button class="action-btn" onclick="editarVeiculo(${v.id})">Editar</button>`:''} ${podeExcluir()?`<button class="action-btn danger" onclick="excluirVeiculo(${v.id})">Excluir</button>`:''}</td></tr>`;
   }).join('');
