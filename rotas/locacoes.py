@@ -4,12 +4,13 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, date, timedelta
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.locacao import Locacao
 from modelos.veiculo import Veiculo
 from modelos.pagamento import Pagamento, CobrancaExtra
 from modelos.parcela import Parcela
 
-router = APIRouter(prefix="/locacoes", tags=["Locações"])
+router = APIRouter(prefix="/locacoes", tags=["Locações"], dependencies=[Depends(verificar_token)])
 
 class LocacaoSchema(BaseModel):
     cliente_id: int

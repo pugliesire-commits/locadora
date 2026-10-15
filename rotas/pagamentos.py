@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.pagamento import Pagamento, CobrancaExtra, FormaPagamento, StatusPagamento
 from modelos.locacao import Locacao
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-router = APIRouter(prefix="/pagamentos", tags=["Pagamentos"])
+router = APIRouter(prefix="/pagamentos", tags=["Pagamentos"], dependencies=[Depends(verificar_token)])
 
 class PagamentoCreate(BaseModel):
     locacao_id: int
