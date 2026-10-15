@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.investidor import Investidor
 from modelos.lancamento import LancamentoInvestidor
 from modelos.veiculo import Veiculo
@@ -13,7 +14,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 
-router = APIRouter(prefix="/investidores", tags=["Investidores"])
+router = APIRouter(prefix="/investidores", tags=["Investidores"], dependencies=[Depends(verificar_token)])
 
 # ---------- Schemas ----------
 

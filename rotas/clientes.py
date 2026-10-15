@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.cliente import Cliente
 from modelos.locacao import Locacao
 
-router = APIRouter(prefix="/clientes", tags=["Clientes"])
+router = APIRouter(prefix="/clientes", tags=["Clientes"], dependencies=[Depends(verificar_token)])
 
 class ClienteSchema(BaseModel):
     nome: str

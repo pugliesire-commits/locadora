@@ -913,6 +913,17 @@ function fazerLogout() {
 
 function auth() { return { headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' } }; }
 
+// Se o login expirar, volta para a tela de entrada
+const _fetchOriginal = window.fetch.bind(window);
+window.fetch = async function(url, opts) {
+  const res = await _fetchOriginal(url, opts);
+  if (res.status === 401 && TOKEN && !String(url).includes('/auth/login')) {
+    fazerLogout();
+    showToast('Sua sessão expirou. Entre novamente.', 'var(--warning)');
+  }
+  return res;
+};
+
 function mostrarPagina(nome, el) {
   document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
   document.getElementById('page-' + nome).style.display = 'block';

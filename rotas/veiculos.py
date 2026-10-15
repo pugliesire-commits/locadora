@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.veiculo import Veiculo
 
-router = APIRouter(prefix="/veiculos", tags=["Veiculos"])
+router = APIRouter(prefix="/veiculos", tags=["Veiculos"], dependencies=[Depends(verificar_token)])
 
 class VeiculoSchema(BaseModel):
     placa: str

@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 from modelos.database import SessionLocal
+from modelos.seguranca import verificar_token
 from modelos.aporte import Aporte
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verificar_token)])
 
 def get_db():
     db = SessionLocal()

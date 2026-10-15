@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.parcela import Parcela
 from modelos.locacao import Locacao
 from modelos.exclusao_parcela import ExclusaoParcela
@@ -11,7 +12,7 @@ from modelos.exclusao_parcela import ExclusaoParcela
 class ExclusaoSchema(BaseModel):
     motivo: str
 
-router = APIRouter(prefix="/parcelas", tags=["Parcelas"])
+router = APIRouter(prefix="/parcelas", tags=["Parcelas"], dependencies=[Depends(verificar_token)])
 
 class PagamentoParcela(BaseModel):
     forma_pagamento: str

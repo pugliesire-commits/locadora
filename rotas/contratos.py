@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from modelos.database import get_db
+from modelos.seguranca import verificar_token
 from modelos.locacao import Locacao
 from modelos.cliente import Cliente
 from modelos.veiculo import Veiculo
@@ -34,7 +35,7 @@ def formatar_datetime(d):
     try: return d.strftime("%d/%m/%Y %H:%M")
     except: return str(d)
 
-@router.get("/assinados/lista")
+@router.get("/assinados/lista", dependencies=[Depends(verificar_token)])
 def listar_contratos_assinados(db: Session = Depends(get_db)):
     locs = db.query(Locacao).filter(
         Locacao.contrato_assinado == True,
